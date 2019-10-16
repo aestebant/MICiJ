@@ -117,7 +117,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
 
             for (Future<double[]> result : results) {
                 d = result;
-                this.m_ClusterCentroids.add(new DenseInstance(1.0D, (double[]) d.get()));
+                this.m_ClusterCentroids.add(new DenseInstance(1.0D, d.get()));
             }
         } catch (Exception var6) {
             var6.printStackTrace();
@@ -164,19 +164,27 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             instances = Filter.useFilter(instances, this.m_ReplaceMissingFilter);
         }
 
-        this.m_ClusterNominalCounts = new double[this.m_NumClusters][instances.numAttributes()][];
-        this.m_ClusterMissingCounts = new double[this.m_NumClusters][instances.numAttributes()];
+        int numInstAttributes = instances.get(0).relationalValue(1).numAttributes();
+
+        this.m_ClusterNominalCounts = new double[this.m_NumClusters][numInstAttributes][];
+        this.m_ClusterMissingCounts = new double[this.m_NumClusters][numInstAttributes];
+
+        Instances aux = new Instances(instances.get(0).relationalValue(1));
+        for (int i = 1; i < instances.size(); ++i) {
+            aux.addAll(instances.get(i).relationalValue(1));
+        }
+
         if (this.m_displayStdDevs) {
-            this.m_FullStdDevs = instances.variances();
+            this.m_FullStdDevs = aux.variances();
         }
 
         this.m_FullMeansOrMediansOrModes = this.moveCentroid(0, instances, true, false);
         this.m_FullMissingCounts = this.m_ClusterMissingCounts[0];
         this.m_FullNominalCounts = this.m_ClusterNominalCounts[0];
-        double sumOfWeights = instances.sumOfWeights();
+        double sumOfWeights = aux.sumOfWeights();
 
-        for (int i = 0; i < instances.numAttributes(); ++i) {
-            if (instances.attribute(i).isNumeric()) {
+        for (int i = 0; i < numInstAttributes; ++i) {
+            if (instances.get(0).relationalValue(1).attribute(i).isNumeric()) {
                 if (this.m_displayStdDevs) {
                     this.m_FullStdDevs[i] = Math.sqrt(this.m_FullStdDevs[i]);
                 }
@@ -212,7 +220,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             this.m_dataPointCanopyAssignments = new ArrayList<>();
         }
 
-        int i;
         if (this.m_initializationMethod == 1) {
             this.kMeansPlusPlusInit(initInstances);
             this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
@@ -223,7 +230,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             this.farthestFirstInit(initInstances);
             this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
         } else {
-            for (i = initInstances.numInstances() - 1; i >= 0; --i) {
+            for (int i = initInstances.numInstances() - 1; i >= 0; --i) {
                 int instIndex = RandomO.nextInt(i + 1);
                 hk = new DecisionTableHashKey(initInstances.instance(instIndex), initInstances.numAttributes(), true);
                 if (!initC.containsKey(hk)) {
@@ -236,12 +243,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                     break;
                 }
             }
-
             this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
         }
 
         if (this.m_speedUpDistanceCompWithCanopies) {
-            for (i = 0; i < instances.numInstances(); ++i) {
+            for (int i = 0; i < instances.numInstances(); ++i) {
                 this.m_dataPointCanopyAssignments.add(this.m_canopyClusters.assignCanopies(instances.instance(i)));
             }
         }
@@ -250,17 +256,16 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         boolean converged = false;
         Instances[] tempI = new Instances[this.m_NumClusters];
         this.m_squaredErrors = new double[this.m_NumClusters];
-        this.m_ClusterNominalCounts = new double[this.m_NumClusters][instances.numAttributes()][0];
-        this.m_ClusterMissingCounts = new double[this.m_NumClusters][instances.numAttributes()];
+        this.m_ClusterNominalCounts = new double[this.m_NumClusters][numInstAttributes][0];
+        this.m_ClusterMissingCounts = new double[this.m_NumClusters][numInstAttributes];
         this.startExecutorPool();
 
         int index;
         while (!converged) {
             if (this.m_speedUpDistanceCompWithCanopies) {
                 this.m_centroidCanopyAssignments.clear();
-
-                for (int kk = 0; kk < this.m_ClusterCentroids.numInstances(); ++kk) {
-                    this.m_centroidCanopyAssignments.add(this.m_canopyClusters.assignCanopies(this.m_ClusterCentroids.instance(kk)));
+                for (int i = 0; i < this.m_ClusterCentroids.numInstances(); ++i) {
+                    this.m_centroidCanopyAssignments.add(this.m_canopyClusters.assignCanopies(this.m_ClusterCentroids.instance(i)));
                 }
             }
 
@@ -270,7 +275,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             if (this.m_executionSlots > 1 && instances.numInstances() >= 2 * this.m_executionSlots) {
                 converged = this.launchAssignToClusters(instances, clusterAssignments);
             } else {
-                for (i = 0; i < instances.numInstances(); ++i) {
+                for (int i = 0; i < instances.numInstances(); ++i) {
                     Instance toCluster = instances.instance(i);
                     index = this.clusterProcessedInstance(toCluster, false, true, this.m_speedUpDistanceCompWithCanopies ? (long[]) this.m_dataPointCanopyAssignments.get(i) : null);
                     if (index != clusterAssignments[i]) {
@@ -283,18 +288,18 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
 
             this.m_ClusterCentroids = new Instances(instances, this.m_NumClusters);
 
-            for (i = 0; i < this.m_NumClusters; ++i) {
+            for (int i = 0; i < this.m_NumClusters; ++i) {
                 tempI[i] = new Instances(instances, 0);
             }
 
-            for (i = 0; i < instances.numInstances(); ++i) {
+            for (int i = 0; i < instances.numInstances(); ++i) {
                 tempI[clusterAssignments[i]].add(instances.instance(i));
             }
 
             if (this.m_executionSlots > 1 && instances.numInstances() >= 2 * this.m_executionSlots) {
                 emptyClusterCount = this.launchMoveCentroids(tempI);
             } else {
-                for (i = 0; i < this.m_NumClusters; ++i) {
+                for (int i = 0; i < this.m_NumClusters; ++i) {
                     if (tempI[i].numInstances() == 0) {
                         ++emptyClusterCount;
                     } else {
@@ -314,31 +319,30 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                 } else {
                     Instances[] t = new Instances[this.m_NumClusters];
                     index = 0;
-                    int k = 0;
+                    int j = 0;
                     while (true) {
-                        if (k >= tempI.length) {
+                        if (j >= tempI.length) {
                             tempI = t;
                             break;
                         }
-                        if (tempI[k].numInstances() > 0) {
-                            t[index] = tempI[k];
-                            for (i = 0; i < tempI[k].numAttributes(); ++i) {
-                                this.m_ClusterNominalCounts[index][i] = this.m_ClusterNominalCounts[k][i];
-                            }
+                        if (tempI[j].numInstances() > 0) {
+                            t[index] = tempI[j];
+                            if (tempI[j].get(0).relationalValue(1).numAttributes() >= 0)
+                                System.arraycopy(this.m_ClusterNominalCounts[j], 0, this.m_ClusterNominalCounts[index], 0, tempI[j].get(0).relationalValue(1).numAttributes());
                             ++index;
                         }
-                        ++k;
+                        ++j;
                     }
                 }
             }
 
             if (!converged) {
-                this.m_ClusterNominalCounts = new double[this.m_NumClusters][instances.numAttributes()][0];
+                this.m_ClusterNominalCounts = new double[this.m_NumClusters][instances.get(0).relationalValue(1).numAttributes()][0];
             }
         }
 
         if (!this.m_FastDistanceCalc) {
-            for (i = 0; i < instances.numInstances(); ++i) {
+            for (int i = 0; i < instances.numInstances(); ++i) {
                 this.clusterProcessedInstance(instances.instance(i), true, false, null);
             }
         }
@@ -349,12 +353,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
 
         this.m_ClusterSizes = new double[this.m_NumClusters];
 
-        for (i = 0; i < this.m_NumClusters; ++i) {
+        for (int i = 0; i < this.m_NumClusters; ++i) {
             if (this.m_displayStdDevs) {
                 double[] vals2 = tempI[i].variances();
-
-                for (index = 0; index < instances.numAttributes(); ++index) {
-                    if (instances.attribute(index).isNumeric()) {
+                for (index = 0; index < instances.get(0).relationalValue(1).numAttributes(); ++index) {
+                    if (instances.get(0).relationalValue(1).attribute(index).isNumeric()) {
                         vals2[index] = Math.sqrt(vals2[index]);
                     } else {
                         vals2[index] = Utils.missingValue();
@@ -384,7 +387,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             this.m_canopyClusters.setDebug(this.getDebug());
             this.m_canopyClusters.buildClusterer(data);
         }
-
         this.m_ClusterCentroids = this.m_canopyClusters.getCanopies();
     }
 
@@ -408,12 +410,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             double[] distances = new double[data.numInstances()];
             double[] cumProbs = new double[data.numInstances()];
 
-            int i;
-            for (i = 0; i < data.numInstances(); ++i) {
+            for (int i = 0; i < data.numInstances(); ++i) {
                 distances[i] = this.m_DistanceFunction.distance(data.instance(i), this.m_ClusterCentroids.instance(iteration));
             }
 
-            for (i = 1; i < this.m_NumClusters; ++i) {
+            for (int i = 1; i < this.m_NumClusters; ++i) {
                 double[] weights = new double[data.numInstances()];
                 System.arraycopy(distances, 0, weights, 0, distances.length);
                 Utils.normalize(weights);
@@ -427,8 +428,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                 cumProbs[data.numInstances() - 1] = 1.0D;
                 double prob = randomO.nextDouble();
 
-                int k;
-                for (k = 0; k < cumProbs.length; ++k) {
+                for (int k = 0; k < cumProbs.length; ++k) {
                     if (prob < cumProbs[k]) {
                         Instance candidateCenter = data.instance(k);
                         hk = new DecisionTableHashKey(candidateCenter, data.numAttributes(), true);
@@ -438,7 +438,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                         } else {
                             System.err.println("We shouldn't get here....");
                         }
-
                         --remainingInstances;
                         break;
                     }
@@ -449,7 +448,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                     break;
                 }
 
-                for (k = 0; k < data.numInstances(); ++k) {
+                for (int k = 0; k < data.numInstances(); ++k) {
                     if (distances[k] > 0.0D) {
                         double newDist = this.m_DistanceFunction.distance(data.instance(k), this.m_ClusterCentroids.instance(iteration));
                         if (newDist < distances[k]) {
@@ -475,50 +474,52 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             }
         }
 
-        for (Instance inst : members) {
-            for (int j = 0; j < numInstAttributes; ++j) {
-                if (inst.isMissing(j)) {
-                    weightMissing[j] += inst.weight();
-                } else {
-                    weightNonMissing[j] += inst.weight();
-                    if (members.attribute(j).isNumeric()) {
-                        vals[j] += inst.weight() * inst.value(j);
+        for (Instance bag : members) {
+            for (Instance inst : bag.relationalValue(1)) {
+                for (int i = 0; i < numInstAttributes; ++i) {
+                    if (inst.isMissing(i)) {
+                        weightMissing[i] += inst.weight();
                     } else {
-                        double[] var10000 = nominalDists[j];
-                        int var10001 = (int) inst.value(j);
-                        var10000[var10001] += inst.weight();
+                        weightNonMissing[i] += inst.weight();
+                        if (inst.attribute(i).isNumeric()) {
+                            vals[i] += inst.weight() * inst.value(i);
+                        } else {
+                            double[] var10000 = nominalDists[i];
+                            int var10001 = (int) inst.value(i);
+                            var10000[var10001] += inst.weight();
+                        }
                     }
                 }
             }
         }
 
-        for (int j = 0; j < members.numAttributes(); ++j) {
-            if (members.attribute(j).isNumeric()) {
-                if (weightNonMissing[j] > 0.0D) {
-                    vals[j] /= weightNonMissing[j];
+        for (int i = 0; i < numInstAttributes; ++i) {
+            if (members.get(0).relationalValue(1).attribute(i).isNumeric()) {
+                if (weightNonMissing[i] > 0.0D) {
+                    vals[i] /= weightNonMissing[i];
                 } else {
-                    vals[j] = Utils.missingValue();
+                    vals[i] = Utils.missingValue();
                 }
             } else {
                 double max = -1.7976931348623157E308D;
                 double maxIndex = -1.0D;
 
-                for (int i = 0; i < nominalDists[j].length; ++i) {
-                    if (nominalDists[j][i] > max) {
-                        max = nominalDists[j][i];
-                        maxIndex = i;
+                for (int j = 0; j < nominalDists[i].length; ++j) {
+                    if (nominalDists[i][j] > max) {
+                        max = nominalDists[i][j];
+                        maxIndex = j;
                     }
 
-                    if (max < weightMissing[j]) {
-                        vals[j] = Utils.missingValue();
+                    if (max < weightMissing[i]) {
+                        vals[i] = Utils.missingValue();
                     } else {
-                        vals[j] = maxIndex;
+                        vals[i] = maxIndex;
                     }
                 }
             }
         }
 
-        if (this.m_DistanceFunction instanceof ManhattanDistance) {
+        /*if (this.m_DistanceFunction instanceof ManhattanDistance) {
             int middle = (members.numInstances() - 1) / 2;
             boolean dataIsEven = members.numInstances() % 2 == 0;
             Instances sortedMembers;
@@ -540,10 +541,10 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                     }
                 }
             }
-        }
+        }*/
 
         if (updateClusterInfo) {
-            for (int j = 0; j < members.numAttributes(); ++j) {
+            for (int j = 0; j < numInstAttributes; ++j) {
                 this.m_ClusterMissingCounts[centroidIndex][j] = weightMissing[j];
                 this.m_ClusterNominalCounts[centroidIndex][j] = nominalDists[j];
             }
@@ -565,7 +566,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             if (useFastDistCalc) {
                 if (this.m_speedUpDistanceCompWithCanopies && instanceCanopies != null && instanceCanopies.length > 0) {
                     try {
-                        if (!Canopy.nonEmptyCanopySetIntersection((long[]) this.m_centroidCanopyAssignments.get(i), instanceCanopies)) {
+                        if (!Canopy.nonEmptyCanopySetIntersection(this.m_centroidCanopyAssignments.get(i), instanceCanopies)) {
                             continue;
                         }
                     } catch (Exception var12) {
@@ -587,10 +588,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         }
 
         if (updateErrors) {
-            if (this.m_DistanceFunction instanceof EuclideanDistance) {
-                minDist *= minDist * instance.weight();
-            }
-
+            minDist *= minDist * instance.weight();
             double[] var10000 = this.m_squaredErrors;
             var10000[bestCluster] += minDist;
         }
@@ -608,7 +606,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             inst = instance;
         }
 
-        return this.clusterProcessedInstance(inst, false, true, (long[]) null);
+        return this.clusterProcessedInstance(inst, false, true, null);
     }
 
     public int numberOfClusters() throws Exception {
@@ -1306,7 +1304,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
 
             for (int i = this.m_start; i < this.m_end; ++i) {
                 Instance toCluster = this.m_inst.instance(i);
-                long[] instanceCanopies = MISimpleKMeans.this.m_speedUpDistanceCompWithCanopies ? (long[]) MISimpleKMeans.this.m_dataPointCanopyAssignments.get(i) : null;
+                long[] instanceCanopies = MISimpleKMeans.this.m_speedUpDistanceCompWithCanopies ? MISimpleKMeans.this.m_dataPointCanopyAssignments.get(i) : null;
                 int newC = this.clusterInstance(toCluster, instanceCanopies);
                 if (newC != this.m_clusterAssignments[i]) {
                     converged = false;
