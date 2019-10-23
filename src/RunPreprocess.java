@@ -1,11 +1,7 @@
 import filters.MIStandardization;
+import utils.ProcessDataset;
 import weka.core.Instances;
-import weka.core.converters.ArffLoader;
 import weka.core.converters.ConverterUtils;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 
 public class RunPreprocess {
     public static void main(String[] args) {
@@ -14,15 +10,7 @@ public class RunPreprocess {
         };
 
         for (String d : datasets) {
-            ArffLoader.ArffReader arff = null;
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader(d + ".arff"));
-                arff = new ArffLoader.ArffReader(reader);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            assert arff != null;
-            Instances data = arff.getData();
+            Instances data = ProcessDataset.readArff(d + ".arff");
 
             MIStandardization filter = new MIStandardization();
             data = filter.z5(data);

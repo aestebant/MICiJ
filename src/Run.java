@@ -1,10 +1,17 @@
 import algorithms.MISimpleKMeans;
 import evaluators.ClusterEvaluation;
+import utils.ProcessDataset;
+import weka.clusterers.Clusterer;
 
 public class Run {
     public static void main(String[] args) {
 
-        MISimpleKMeans clusterer = new MISimpleKMeans();
+        Clusterer clusterer = new MISimpleKMeans();
+        try {
+            ((MISimpleKMeans) clusterer).setNumClusters(2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //MIDBSCAN clusterer = new MIDBSCAN();
         //MIOPTICS clusterer = new MIOPTICS();
         // E: epsion, M: min points
@@ -15,7 +22,14 @@ public class Run {
             e.printStackTrace();
         }*/
 
-        String evalOptions = "-t /home/aurora/Escritorio/prueba.arff"
+        try {
+            clusterer.buildClusterer(ProcessDataset.readArff("datasets/eastwest_relational-z4.arff"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println(clusterer.toString());
+
+        String evalOptions = "-t datasets/component_relational.arff"
                 + " -c last";
         try {
             System.out.println(ClusterEvaluation.evaluateClusterer(clusterer, weka.core.Utils.splitOptions(evalOptions)));
