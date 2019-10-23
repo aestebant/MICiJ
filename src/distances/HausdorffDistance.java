@@ -17,9 +17,19 @@ public class HausdorffDistance implements DistanceFunction {
     private String attributeIndices;
     private boolean invertSelection = false;
 
-    public double distance(Instance bag1, Instance bag2) {
+    @Override
+    public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
         Instances i1 = preprocess(bag1);
-        Instances i2 = preprocess(bag2);
+
+        Instances i2;
+        // Comprobar si se está calculando la distancia con un centroide directamente
+        if (!bag2.attribute(1).isRelationValued() && bag2.numAttributes() == i1.numAttributes()) {
+            i2 = new Instances(instances, 1);
+            i2.add(bag2);
+        }
+        else {
+            i2 = preprocess(bag2);
+        }
 
         assert i1.numAttributes() == i2.numAttributes();
 
@@ -34,8 +44,39 @@ public class HausdorffDistance implements DistanceFunction {
             case AVE:
                 distance = aveHausdorff(i1, i2);
         }
+
+        if (performanceStats != null)
+            performanceStats.incrCoordCount();
+
         //System.out.println("Hausdorff distance between " + bag1.value(0) + " and " + bag2.value(0) + "-> " + distance);
         return distance;
+    }
+
+    @Override
+    public double distance(Instance bag1, Instance bag2) {
+        double result = 0D;
+        try {
+            result = this.distance(bag1, bag2, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    @Override
+    public double distance(Instance bag1, Instance bag2, double cutOffValue) {
+        return this.distance(bag1, bag2);
+    }
+
+    @Override
+    public double distance(Instance bag1, Instance bag2, double cutOffValue, PerformanceStats performanceStats) {
+        double result = 0D;
+        try {
+            result = this.distance(bag1, bag2, performanceStats);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     private Instances preprocess(Instance bag) {
@@ -178,21 +219,6 @@ public class HausdorffDistance implements DistanceFunction {
             for (double v : distance) System.out.printf("%.2f ", v);
             System.out.println();
         }
-    }
-
-    @Override
-    public double distance(Instance instance, Instance instance1, PerformanceStats performanceStats) throws Exception {
-        return 0;
-    }
-
-    @Override
-    public double distance(Instance instance, Instance instance1, double v) {
-        return 0;
-    }
-
-    @Override
-    public double distance(Instance instance, Instance instance1, double v, PerformanceStats performanceStats) {
-        return 0;
     }
 
     @Override
