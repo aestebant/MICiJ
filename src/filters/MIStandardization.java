@@ -7,6 +7,27 @@ public class MIStandardization {
 
     private Instances dataset;
 
+    public Instances z4(Instances dataset) {
+        this.dataset = new Instances(dataset);
+        int numAtt = dataset.get(0).relationalValue(1).numAttributes();
+        for (int att = 0; att < numAtt; ++att) {
+            double minValue = getMin(att);
+            double maxValue = getMax(att);
+            for (Instance bag : this.dataset) {
+                Instances instances = bag.relationalValue(1);
+                for (Instance i : instances) {
+                    if (minValue == maxValue)
+                        i.setValue(att, 0D);
+                    else {
+                        double standardized = i.value(att) / (maxValue - minValue);
+                        i.setValue(att, standardized);
+                    }
+                }
+            }
+        }
+        return this.dataset;
+    }
+
     public Instances z5(Instances dataset) {
         this.dataset = new Instances(dataset);
         int numAtt = dataset.get(0).relationalValue(1).numAttributes();
