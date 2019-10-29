@@ -6,26 +6,38 @@ import weka.core.converters.ConverterUtils;
 public class RunPreprocess {
     public static void main(String[] args) {
         String[] datasets = {
-                "/home/aurora/Escritorio/MILClustering/datasets/mutagenesis3_bonds_relational"
+                "component_relational",
+                "eastwest_relational",
+                "elephant_relational",
+                "fox_relational",
+                "function_relational",
+                "musk1_relational",
+                "musk2_relational",
+                "mutagenesis3_atoms_relational",
+                "mutagenesis3_bonds_relational",
+                "mutagenesis3_chains_relational",
+                "process_relational",
+                "suramin_relational",
+                "tiger_relational",
+                "trx_relational",
+                "westeast_relational"
         };
 
+        MIStandardization filter = new MIStandardization();
         for (String d : datasets) {
-            Instances data = ProcessDataset.readArff(d + ".arff");
+            Instances data = ProcessDataset.readArff("datasets/" + d + ".arff");
 
-            MIStandardization filter = new MIStandardization();
-            data = filter.z5(data);
-
-            /*int size = data.numInstances();
-            for (int i = size-1; i >= 0; --i) {
-                if (i != 0 && i != 3 && i != 14)
-                    data.delete(i);
-            }*/
+            Instances dataZ4 = filter.z4(data);
+            Instances dataZ5 = filter.z5(data);
 
             try {
-                ConverterUtils.DataSink.write(d + "-z5.arff", data);
+                ConverterUtils.DataSink.write("datasets/" + d + "-z4.arff", dataZ4);
+                ConverterUtils.DataSink.write("datasets/" + d + "-z5.arff", dataZ5);
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            System.out.println("Finished dataset " + d);
         }
     }
 }
