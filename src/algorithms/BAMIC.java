@@ -13,7 +13,6 @@ public class BAMIC extends MISimpleKMeans {
 
     @Override
     protected void randomInit(Instances data) throws Exception {
-        System.out.println("ESTAMOS EN EL RANDOM INIT DE BAMIC");
         this.m_ClusterCentroids = new Instances(data, this.m_NumClusters);
 
         Random random = new Random(this.getSeed());
