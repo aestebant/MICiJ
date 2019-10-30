@@ -20,11 +20,10 @@ public class HausdorffDistance implements DistanceFunction {
     @Override
     public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
         Instances i1 = preprocess(bag1);
-
         Instances i2;
         // Comprobar si se está calculando la distancia con un centroide directamente
         if (!bag2.attribute(1).isRelationValued() && bag2.numAttributes() == i1.numAttributes()) {
-            i2 = new Instances(instances, 1);
+            i2 = new Instances(i1, 1);
             i2.add(bag2);
         }
         else {

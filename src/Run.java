@@ -1,3 +1,4 @@
+import algorithms.MyClusterer;
 import evaluators.ClusterEvaluation;
 import utils.ProcessDataset;
 import weka.clusterers.AbstractClusterer;
@@ -11,39 +12,39 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
-                "component_relational",
-                "eastwest_relational",
-                "elephant_relational",
-                "fox_relational",
-                "function_relational",
-                "musk1_relational",
-                "musk2_relational",
-                "mutagenesis3_atoms_relational",
-                "mutagenesis3_bonds_relational",
-                "mutagenesis3_chains_relational",
-                "process_relational",
-                "suramin_relational",
-                "tiger_relational",
-                "trx_relational",
+//                "component_relational",
+//                "eastwest_relational",
+//                "elephant_relational",
+//                "fox_relational",
+//                "function_relational",
+//                "musk1_relational",
+//                "musk2_relational",
+//                "mutagenesis3_atoms_relational",
+//                "mutagenesis3_bonds_relational",
+//                "mutagenesis3_chains_relational",
+//                "process_relational",
+//                "suramin_relational",
+//                "tiger_relational",
+//                "trx_relational",
                 "westeast_relational"
         };
 
         String[] standardization = {
-                "",
-                "-z4",
+//                "",
+//                "-z4",
                 "-z5"
         };
 
         String[] clustering = {
-                "MIDBSCAN",
-                "MISimpleKMeans",
+//                "MIDBSCAN",
+//                "MISimpleKMeans",
                 "BAMIC"
         };
 
         Map<String, String> options = new HashMap<>();
         options.put("MIDBSCAN", " -E 1.4 -M 8");
-        options.put("MISimpleKMeans", "");
-        options.put("BAMIC", "");
+        options.put("MISimpleKMeans", "-num-slots 2 -V");
+        options.put("BAMIC", "-num-slots 2 -V");
 
         for (String d : datasets) {
             for (String z : standardization) {
@@ -71,7 +72,7 @@ public class Run {
                     assert clusterer != null;
 
                     try {
-                        ((algorithms.Clusterer) clusterer).setOptions(weka.core.Utils.splitOptions(options.get(c)));
+                        ((MyClusterer) clusterer).setOptions(weka.core.Utils.splitOptions(options.get(c)));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
