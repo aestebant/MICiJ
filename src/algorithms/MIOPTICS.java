@@ -20,7 +20,7 @@ import java.io.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
-public class MIOPTICS extends AbstractClusterer implements OptionHandler, TechnicalInformationHandler {
+public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
     static final long serialVersionUID = 274552680222105221L;
     private double epsilon = 0.9D;
     private int minPoints = 6;
@@ -33,6 +33,7 @@ public class MIOPTICS extends AbstractClusterer implements OptionHandler, Techni
     private boolean showGUI = true;
     private File databaseOutput = new File(".");
 
+    @Override
     public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
@@ -44,6 +45,7 @@ public class MIOPTICS extends AbstractClusterer implements OptionHandler, Techni
         return result;
     }
 
+    @Override
     public void buildClusterer(Instances instances) throws Exception {
         this.getCapabilities().testWithFail(instances);
         this.resultVector = new ArrayList<>();
@@ -156,6 +158,7 @@ public class MIOPTICS extends AbstractClusterer implements OptionHandler, Techni
         throw new Exception();
     }
 
+    @Override
     public int numberOfClusters() throws Exception {
         return this.numberOfGeneratedClusters;
     }
@@ -171,6 +174,7 @@ public class MIOPTICS extends AbstractClusterer implements OptionHandler, Techni
         return vector.elements();
     }
 
+    @Override
     public void setOptions(String[] options) throws Exception {
         String optionString = Utils.getOption('E', options);
         if (optionString.length() != 0) {

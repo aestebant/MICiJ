@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
+public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer, NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
     private int m_NumClusters = 2;
     private int m_MaxIterations = 500;
     private int m_initializationMethod = 0;
@@ -73,6 +73,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         return "Cluster data using the k means algorithm. Can use either the Euclidean distance (default) or the Manhattan distance. If the Manhattan distance is used, then centroids are computed as the component-wise median rather than mean. For more information see:\n\n" + this.getTechnicalInformation().toString();
     }
 
+    @Override
     public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
@@ -130,6 +131,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         return converged;
     }
 
+    @Override
     public void buildClusterer(Instances data) throws Exception {
         this.getCapabilities().testWithFail(data);
 
@@ -174,28 +176,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
             this.m_dataPointCanopyAssignments = new ArrayList<>();
         }
 
-        Random RandomO = new Random(this.getSeed());
-        Map<DecisionTableHashKey, Integer> initialClusters = new HashMap<>();
-        this.m_canopyClusters = null;
         switch (this.m_initializationMethod) {
             case 0:
-                for (int i = initInstances.numInstances() - 1; i >= 0; --i) {
-                    int bagIdx = RandomO.nextInt(i + 1);
-                    DecisionTableHashKey hk = new DecisionTableHashKey(initInstances.get(bagIdx), initInstances.numAttributes(), true);
-                    if (!initialClusters.containsKey(hk)) {
-                        double[] mean = new double[numInstAttributes];
-                        for (int j = 0; j < numInstAttributes; ++j)
-                            mean[j] = initInstances.get(bagIdx).relationalValue(1).meanOrMode(j);
-                        Instance centroid = new DenseInstance(1D, mean);
-                        this.m_ClusterCentroids.add(centroid);
-                        initialClusters.put(hk, null);
-                    }
-                    initInstances.swap(i, bagIdx);
-                    if (this.m_ClusterCentroids.numInstances() == this.m_NumClusters) {
-                        break;
-                    }
-                }
-                this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
+                this.randomInit(initInstances);
                 break;
             case 1:
                 this.kMeansPlusPlusInit(initInstances);
@@ -334,6 +317,31 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         this.m_DistanceFunction.clean();
     }
 
+    private void randomInit(Instances data) throws Exception {
+        Random random = new Random(this.getSeed());
+        Map<DecisionTableHashKey, Integer> initialClusters = new HashMap<>();
+        int numInstAttributes = data.get(0).relationalValue(1).numAttributes();
+
+        for (int i = data.numInstances() - 1; i >= 0; --i) {
+            int bagIdx = random.nextInt(i + 1);
+            DecisionTableHashKey hk = new DecisionTableHashKey(data.get(bagIdx), data.numAttributes(), true);
+            if (!initialClusters.containsKey(hk)) {
+                double[] mean = new double[numInstAttributes];
+                for (int j = 0; j < numInstAttributes; ++j)
+                    mean[j] = data.get(bagIdx).relationalValue(1).meanOrMode(j);
+                Instance centroid = new DenseInstance(1D, mean);
+                this.m_ClusterCentroids.add(centroid);
+                initialClusters.put(hk, null);
+            }
+            data.swap(i, bagIdx);
+            if (this.m_ClusterCentroids.numInstances() == this.m_NumClusters) {
+                break;
+            }
+        }
+        this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
+    }
+
+    //TODO No adaptado a MI
     private void canopyInit(Instances data) throws Exception {
         if (this.m_canopyClusters == null) {
             this.m_canopyClusters = new Canopy();
@@ -350,6 +358,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         this.m_ClusterCentroids = this.m_canopyClusters.getCanopies();
     }
 
+    //TODO No adaptado a MI
     private void farthestFirstInit(Instances data) throws Exception {
         FarthestFirst ff = new FarthestFirst();
         ff.setNumClusters(this.m_NumClusters);
@@ -357,10 +366,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         this.m_ClusterCentroids = ff.getClusterCentroids();
     }
 
+    //TODO No adaptado a MI
     private void kMeansPlusPlusInit(Instances data) throws Exception {
-        Random randomO = new Random(this.getSeed());
+        Random random = new Random(this.getSeed());
         Map<DecisionTableHashKey, String> initC = new HashMap<>();
-        int index = randomO.nextInt(data.numInstances());
+        int index = random.nextInt(data.numInstances());
         this.m_ClusterCentroids.add(data.instance(index));
         DecisionTableHashKey hk = new DecisionTableHashKey(data.instance(index), data.numAttributes(), true);
         initC.put(hk, null);
@@ -386,7 +396,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
                 }
 
                 cumProbs[data.numInstances() - 1] = 1.0D;
-                double prob = randomO.nextDouble();
+                double prob = random.nextDouble();
 
                 for (int k = 0; k < cumProbs.length; ++k) {
                     if (prob < cumProbs[k]) {
@@ -477,14 +487,17 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         return bestCluster;
     }
 
-    public int clusterInstance(Instance instance) throws Exception {
+    @Override
+    public int clusterInstance(Instance instance) {
         return this.clusterProcessedInstance(instance, false, true, null);
     }
 
+    @Override
     public int numberOfClusters() throws Exception {
         return this.m_NumClusters;
     }
 
+    //TODO No adaptado a MI
     public Enumeration<Option> listOptions() {
         Vector<Option> result = new Vector<>();
         result.addElement(new Option("\tNumber of clusters.\n\t(default 2).", "N", 1, "-N <num>"));
@@ -686,6 +699,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements NumberOfClu
         return this.m_executionSlots;
     }
 
+    @Override
     public void setOptions(String[] options) throws Exception {
         this.m_displayStdDevs = Utils.getFlag("V", options);
 

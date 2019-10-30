@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-public class MIDBSCAN extends AbstractClusterer implements OptionHandler, TechnicalInformationHandler {
+public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
     static final long serialVersionUID = -1666498248451219728L;
     private double epsilon = 0.9;
     private int minPoints = 6;
@@ -28,6 +28,7 @@ public class MIDBSCAN extends AbstractClusterer implements OptionHandler, Techni
     private int processed_InstanceID;
     private double elapsedTime;
 
+    @Override
     public Capabilities getCapabilities() {
         Capabilities result = super.getCapabilities();
         result.disableAll();
@@ -39,6 +40,7 @@ public class MIDBSCAN extends AbstractClusterer implements OptionHandler, Techni
         return result;
     }
 
+    @Override
     public void buildClusterer(Instances instances) throws Exception {
         this.getCapabilities().testWithFail(instances);
         long time_1 = System.currentTimeMillis();
@@ -122,6 +124,7 @@ public class MIDBSCAN extends AbstractClusterer implements OptionHandler, Techni
         }
     }
 
+    @Override
     public int numberOfClusters() {
         return this.numberOfGeneratedClusters;
     }
@@ -134,6 +137,7 @@ public class MIDBSCAN extends AbstractClusterer implements OptionHandler, Techni
         return vector.elements();
     }
 
+    @Override
     public void setOptions(String[] options) throws Exception {
         String optionString = Utils.getOption('E', options);
         if (optionString.length() != 0) {
