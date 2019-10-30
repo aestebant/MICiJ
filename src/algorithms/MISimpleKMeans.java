@@ -805,200 +805,59 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     public String toString() {
         if (this.m_ClusterCentroids == null) {
             return "No clusterer built yet!";
-        } else {
-            int maxWidth = 0;
-            int maxAttWidth = 0;
-            boolean containsNumeric = false;
-
-            int maxV;
-            for (int i = 0; i < this.m_NumClusters; ++i) {
-                for (maxV = 0; maxV < this.m_ClusterCentroids.numAttributes(); ++maxV) {
-                    if (this.m_ClusterCentroids.attribute(maxV).name().length() > maxAttWidth) {
-                        maxAttWidth = this.m_ClusterCentroids.attribute(maxV).name().length();
-                    }
-                    if (this.m_ClusterCentroids.attribute(maxV).isNumeric()) {
-                        containsNumeric = true;
-                        double width = Math.log(Math.abs(this.m_ClusterCentroids.instance(i).value(maxV))) / Math.log(10.0D);
-                        if (width < 0.0D) {
-                            width = 1.0D;
-                        }
-                        width += 6.0D;
-                        if ((int) width > maxWidth) {
-                            maxWidth = (int) width;
-                        }
-                    }
-                }
-            }
-
-            String clustNum;
-            for (int i = 0; i < this.m_ClusterCentroids.numAttributes(); ++i) {
-                if (this.m_ClusterCentroids.attribute(i).isNominal()) {
-                    Attribute a = this.m_ClusterCentroids.attribute(i);
-                    for (i = 0; i < this.m_ClusterCentroids.numInstances(); ++i) {
-                        clustNum = a.value((int) this.m_ClusterCentroids.instance(i).value(i));
-                        if (clustNum.length() > maxWidth) {
-                            maxWidth = clustNum.length();
-                        }
-                    }
-                    for (i = 0; i < a.numValues(); ++i) {
-                        clustNum = a.value(i) + " ";
-                        if (clustNum.length() > maxAttWidth) {
-                            maxAttWidth = clustNum.length();
-                        }
-                    }
-                }
-            }
-
-            double[] auxSize = this.m_ClusterSizes;
-            maxV = auxSize.length;
-
-            String strVal;
-            for (int i = 0; i < maxV; ++i) {
-                double m_ClusterSize = auxSize[i];
-                strVal = "(" + m_ClusterSize + ")";
-                if (strVal.length() > maxWidth) {
-                    maxWidth = strVal.length();
-                }
-            }
-
-            if (this.m_displayStdDevs && maxAttWidth < "missing".length()) {
-                maxAttWidth = "missing".length();
-            }
-
-            String plusMinus = "+/-";
-            maxAttWidth += 2;
-            if (this.m_displayStdDevs && containsNumeric) {
-                maxWidth += plusMinus.length();
-            }
-
-            if (maxAttWidth < "Attribute".length() + 2) {
-                maxAttWidth = "Attribute".length() + 2;
-            }
-
-            if (maxWidth < "Full Data".length()) {
-                maxWidth = "Full Data".length() + 1;
-            }
-
-            if (maxWidth < "missing".length()) {
-                maxWidth = "missing".length() + 1;
-            }
-
-            StringBuilder temp = new StringBuilder();
-            temp.append("\nkMeans\n======\n");
-            temp.append("\nNumber of iterations: ").append(this.m_Iterations);
-            if (!this.m_FastDistanceCalc) {
-                temp.append("\n");
-                if (this.m_DistanceFunction instanceof EuclideanDistance) {
-                    temp.append("Within cluster sum of squared errors: ").append(Utils.sum(this.m_squaredErrors));
-                } else {
-                    temp.append("Sum of within cluster distances: ").append(Utils.sum(this.m_squaredErrors));
-                }
-            }
-
-            temp.append("\n\nInitial starting points (");
-            switch (this.m_initializationMethod) {
-                case 0:
-                    temp.append("random");
-                    break;
-                case 1:
-                    temp.append("k-means++");
-                    break;
-                case 2:
-                    temp.append("canopy");
-                    break;
-                case 3:
-                    temp.append("farthest first");
-                    break;
-            }
-            temp.append("):\n");
-
-            if (this.m_initializationMethod != 2) {
-                temp.append("\n");
-                for (int i = 0; i < this.m_initialStartPoints.numInstances(); ++i) {
-                    temp.append("Cluster ").append(i).append(": ").append(this.m_initialStartPoints.instance(i)).append("\n");
-                }
-            } else {
-                temp.append(this.m_canopyClusters.toString(false));
-            }
-
-            if (this.m_speedUpDistanceCompWithCanopies) {
-                temp.append("\nReduced number of distance calculations by using canopies.");
-                if (this.m_initializationMethod != 2) {
-                    temp.append("\nCanopy T2 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT2()));
-                    temp.append("\nCanopy T1 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT1())).append("\n");
-                }
-            }
-
-            temp.append("\n\nFinal cluster centroids:\n");
-            temp.append(this.pad("Cluster#", " ", maxAttWidth + maxWidth * 2 + 2 - "Cluster#".length(), true));
-            temp.append("\n");
-            temp.append(this.pad("Attribute", " ", maxAttWidth - "Attribute".length(), false));
-            temp.append(this.pad("Full Data", " ", maxWidth + 1 - "Full Data".length(), true));
-
-            for (int i = 0; i < this.m_NumClusters; ++i) {
-                clustNum = "" + i;
-                temp.append(this.pad(clustNum, " ", maxWidth + 1 - clustNum.length(), true));
-            }
-
-            temp.append("\n");
-            String cSize = "(" + Utils.sum(this.m_ClusterSizes) + ")";
-            temp.append(this.pad(cSize, " ", maxAttWidth + maxWidth + 1 - cSize.length(), true));
-
-            for (int i = 0; i < this.m_NumClusters; ++i) {
-                cSize = "(" + this.m_ClusterSizes[i] + ")";
-                temp.append(this.pad(cSize, " ", maxWidth + 1 - cSize.length(), true));
-            }
-
-            temp.append("\n");
-            temp.append(this.pad("", "=", maxAttWidth + maxWidth * (this.m_ClusterCentroids.numInstances() + 1) + this.m_ClusterCentroids.numInstances() + 1, true));
-            temp.append("\n");
-
-            for (int i = 0; i < this.m_ClusterCentroids.numAttributes(); ++i) {
-                String attName = this.m_ClusterCentroids.attribute(i).name();
-                temp.append(attName);
-
-                for (int j = 0; j < maxAttWidth - attName.length(); ++j) {
-                    temp.append(" ");
-                }
-
-                String valMeanMode;
-                if (Double.isNaN(this.m_FullMeansOrMediansOrModes[i])) {
-                    valMeanMode = this.pad("missing", " ", maxWidth + 1 - "missing".length(), true);
-                } else {
-                    valMeanMode = this.pad(strVal = Utils.doubleToString(this.m_FullMeansOrMediansOrModes[i], maxWidth, 4).trim(), " ", maxWidth + 1 - strVal.length(), true);
-                }
-
-                temp.append(valMeanMode);
-
-                for (int j = 0; j < this.m_NumClusters; ++j) {
-                    valMeanMode = this.pad(strVal = Utils.doubleToString(this.m_ClusterCentroids.instance(j).value(i), maxWidth, 4).trim(), " ", maxWidth + 1 - strVal.length(), true);
-                    temp.append(valMeanMode);
-                }
-
-                temp.append("\n");
-                if (this.m_displayStdDevs) {
-                    String stdDevVal;
-                    if (Double.isNaN(this.m_FullMeansOrMediansOrModes[i])) {
-                        stdDevVal = this.pad("--", " ", maxAttWidth + maxWidth + 1 - 2, true);
-                    } else {
-                        stdDevVal = this.pad(strVal = plusMinus + Utils.doubleToString(this.m_FullStdDevs[i], maxWidth, 4).trim(), " ", maxWidth + maxAttWidth + 1 - strVal.length(), true);
-                    }
-                    temp.append(stdDevVal);
-                    for (int j = 0; j < this.m_NumClusters; ++j) {
-                        if (this.m_ClusterCentroids.instance(j).isMissing(i)) {
-                            stdDevVal = this.pad("--", " ", maxWidth + 1 - 2, true);
-                        } else {
-                            stdDevVal = this.pad(strVal = plusMinus + Utils.doubleToString(this.m_ClusterStdDevs.instance(j).value(i), maxWidth, 4).trim(), " ", maxWidth + 1 - strVal.length(), true);
-                        }
-
-                        temp.append(stdDevVal);
-                    }
-                    temp.append("\n\n");
-                }
-            }
-            temp.append("\n\n");
-            return temp.toString();
         }
+
+        StringBuilder result = new StringBuilder();
+
+        result.append("\nNumber of iterations: ").append(this.m_Iterations).append("\n");
+        if (!this.m_FastDistanceCalc) {
+            if (this.m_DistanceFunction instanceof EuclideanDistance) {
+                result.append("Within cluster sum of squared errors: ").append(Utils.sum(this.m_squaredErrors)).append("\n");
+            } else {
+                result.append("Sum of within cluster distances: ").append(Utils.sum(this.m_squaredErrors)).append("\n");
+            }
+        }
+        result.append("Initial starting points (");
+        switch (this.m_initializationMethod) {
+            case 0:
+                result.append("random");
+                break;
+            case 1:
+                result.append("k-means++");
+                break;
+            case 2:
+                result.append("canopy");
+                break;
+            case 3:
+                result.append("farthest first");
+                break;
+        }
+        result.append("):\n");
+
+        if (this.m_initializationMethod != 2) {
+            for (int i = 0; i < this.m_initialStartPoints.numInstances(); ++i) {
+                result.append("\tCluster ").append(i).append(": ").append(this.m_initialStartPoints.instance(i)).append("\n");
+            }
+        } else {
+            result.append("\t").append(this.m_canopyClusters.toString(false)).append("\n");
+        }
+
+        if (this.m_speedUpDistanceCompWithCanopies) {
+            result.append("Reduced number of distance calculations by using canopies.\n");
+            if (this.m_initializationMethod != 2) {
+                result.append("\tCanopy T2 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT2())).append("\n");
+                result.append("\tCanopy T1 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT1())).append("\n");
+            }
+        }
+
+        result.append("Final cluster centroids:\n");
+        for (int i = 0; i < this.m_initialStartPoints.numInstances(); ++i) {
+            result.append("\tCluster ").append(i).append(": ").append(this.m_ClusterCentroids.instance(i)).append("\n");
+        }
+
+        printSurvey(result);
+
+        return result.toString();
     }
 
     private String pad(String source, String padChar, int length, boolean leftPad) {
@@ -1015,6 +874,141 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             }
         }
         return temp.toString();
+    }
+
+    private void printSurvey(StringBuilder result) {
+        Instances clustersToPrint;
+        int numAttributes;
+        if (m_ClusterCentroids.attribute(1).isRelationValued()) {
+            clustersToPrint = new Instances(m_ClusterCentroids.get(0).relationalValue(1), m_NumClusters);
+            numAttributes = m_ClusterCentroids.get(0).relationalValue(1).numAttributes();
+            for (int i = 0; i < m_NumClusters; ++i) {
+                double[] mean = new double[numAttributes];
+                for (int j = 0; j < numAttributes; ++j) {
+                    mean[j] = m_ClusterCentroids.get(i).relationalValue(1).meanOrMode(j);
+                }
+                clustersToPrint.add(new DenseInstance(1D, mean));
+            }
+        }
+        else {
+            clustersToPrint = new Instances(m_ClusterCentroids);
+            numAttributes = m_ClusterCentroids.numAttributes();
+        }
+
+        int maxWidth = 0;
+        int maxAttWidth = 0;
+        String clustNum;
+        String plusMinus = "+/-";
+
+        boolean containsNumeric = false;
+        int maxV;
+        for (int i = 0; i < m_NumClusters; ++i) {
+            for (maxV = 0; maxV < numAttributes; ++maxV) {
+                if (clustersToPrint.attribute(maxV).name().length() > maxAttWidth) {
+                    maxAttWidth = clustersToPrint.attribute(maxV).name().length();
+                }
+                if (clustersToPrint.attribute(maxV).isNumeric()) {
+                    containsNumeric = true;
+                    double width = Math.log(Math.abs(clustersToPrint.instance(i).value(maxV))) / Math.log(10.0D);
+                    if (width < 0.0D) {
+                        width = 1.0D;
+                    }
+                    width += 6.0D;
+                    if ((int) width > maxWidth) {
+                        maxWidth = (int) width;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < numAttributes; ++i) {
+            if (clustersToPrint.attribute(i).isNominal()) {
+                Attribute a = clustersToPrint.attribute(i);
+                for (i = 0; i < clustersToPrint.numInstances(); ++i) {
+                    clustNum = a.value((int) clustersToPrint.instance(i).value(i));
+                    if (clustNum.length() > maxWidth) {
+                        maxWidth = clustNum.length();
+                    }
+                }
+                for (i = 0; i < a.numValues(); ++i) {
+                    clustNum = a.value(i) + " ";
+                    if (clustNum.length() > maxAttWidth) {
+                        maxAttWidth = clustNum.length();
+                    }
+                }
+            }
+        }
+        double[] auxSize = this.m_ClusterSizes;
+        maxV = auxSize.length;
+        String strVal;
+        for (int i = 0; i < maxV; ++i) {
+            double m_ClusterSize = auxSize[i];
+            strVal = "(" + m_ClusterSize + ")";
+            if (strVal.length() > maxWidth) {
+                maxWidth = strVal.length();
+            }
+        }
+        if (this.m_displayStdDevs && maxAttWidth < "missing".length()) {
+            maxAttWidth = "missing".length();
+        }
+        maxAttWidth += 2;
+        if (this.m_displayStdDevs && containsNumeric) {
+            maxWidth += plusMinus.length();
+        }
+        if (maxAttWidth < "Attribute".length() + 2) {
+            maxAttWidth = "Attribute".length() + 2;
+        }
+        if (maxWidth < "Full Data".length()) {
+            maxWidth = "Full Data".length() + 1;
+        }
+
+        result.append(this.pad("Cluster#", " ", maxAttWidth + maxWidth * 2 + 2 - "Cluster#".length(), true)).append("\n");
+        result.append(this.pad("Attribute", " ", maxAttWidth - "Attribute".length(), false));
+        result.append(this.pad("Full Data", " ", maxWidth + 1 - "Full Data".length(), true));
+
+        for (int i = 0; i < this.m_NumClusters; ++i) {
+            clustNum = String.valueOf(i);
+            result.append(this.pad(clustNum, " ", maxWidth + 1 - clustNum.length(), true));
+        }
+        result.append("\n");
+        String cSize = "(" + Utils.sum(this.m_ClusterSizes) + ")";
+        result.append(this.pad(cSize, " ", maxAttWidth + maxWidth + 1 - cSize.length(), true));
+
+        for (int i = 0; i < this.m_NumClusters; ++i) {
+            cSize = "(" + this.m_ClusterSizes[i] + ")";
+            result.append(this.pad(cSize, " ", maxWidth + 1 - cSize.length(), true));
+        }
+        result.append("\n");
+        result.append(this.pad("", "=", maxAttWidth + maxWidth * (clustersToPrint.numInstances() + 1) + clustersToPrint.numInstances() + 1, true));
+        result.append("\n");
+
+        for (int i = 0; i < numAttributes; ++i) {
+            String attName = clustersToPrint.attribute(i).name();
+            result.append(attName);
+
+            for (int j = 0; j < maxAttWidth - attName.length(); ++j) {
+                result.append(" ");
+            }
+
+            String meanFull = Utils.doubleToString(this.m_FullMeansOrMediansOrModes[i], maxWidth, 4).trim();
+            result.append(this.pad(meanFull, " ", maxWidth + 1 - meanFull.length(), true));
+
+            for (int j = 0; j < this.m_NumClusters; ++j) {
+                String meanCluster = Utils.doubleToString(clustersToPrint.instance(j).value(i), maxWidth, 4).trim();
+                result.append(this.pad(meanCluster, " ", maxWidth + 1 - meanCluster.length(), true));
+            }
+            result.append("\n");
+
+            if (this.m_displayStdDevs) {
+                String stdDevFull = plusMinus + Utils.doubleToString(this.m_FullStdDevs[i], maxWidth, 4).trim();
+                result.append(this.pad(stdDevFull, " ", maxWidth + maxAttWidth + 1 - stdDevFull.length(), true));
+
+                for (int j = 0; j < this.m_NumClusters; ++j) {
+                    String stdDevCluster = plusMinus + Utils.doubleToString(this.m_ClusterStdDevs.instance(j).value(i), maxWidth, 4).trim();
+                    result.append(this.pad(stdDevCluster, " ", maxWidth + 1 - stdDevCluster.length(), true));
+                }
+                result.append("\n\n");
+            }
+        }
     }
 
     public Instances getClusterCentroids() {
