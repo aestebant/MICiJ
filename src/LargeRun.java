@@ -22,99 +22,17 @@ public class LargeRun {
     private static int nThreads = 1;
 
     private static String reportTitle;
-    private static String actualReportTitle;
-    private static File reportFile;
     private static File reportDirectory;
     private static FileWriter reportFileWriter;
 
-    private static void setExperiments() {
-        datasets = new String[]{
-                "component_relational",
-                "eastwest_relational",
-                "elephant_relational",
-                "fox_relational",
-                "function_relational",
-                "musk1_relational",
-                "musk2_relational",
-                "mutagenesis3_atoms_relational",
-                "mutagenesis3_bonds_relational",
-                "mutagenesis3_chains_relational",
-                "process_relational",
-                "suramin_relational",
-                "tiger_relational",
-                "trx_relational",
-                "westeast_relational"
-        };
-
-        standardization = new String[]{
-                "",
-                "-z4",
-                "-z5"
-        };
-
-        clustering = new String[]{
-                "MIDBSCAN",
-                "MISimpleKMeans",
-                "BAMIC",
-        };
-
-        List<String> kMeansConfig = new ArrayList<>();
-        for (int k = 2; k <= 6; ++k) {
-            for (String hausodorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
-                kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausodorff);
-            }
-        }
-        List<String> dbscanConfig = new ArrayList<>();
-        for (double eps = 0.6; eps <= 1.6; eps += 0.2) {
-            for (int minPts = 2; minPts <= 6; ++minPts) {
-                for (String hausodorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
-                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausodorff);
-                }
-            }
-        }
-
-        clusterConfig = new HashMap<>();
-        clusterConfig.put("MISimpleKMeans", kMeansConfig);
-        clusterConfig.put("BAMIC", kMeansConfig);
-        clusterConfig.put("MIDBSCAN", dbscanConfig);
-    }
-
-    private static void setSaveResults() {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
-        Date date = new Date(System.currentTimeMillis());
-        String dateString = dateFormat.format(date);
-        actualReportTitle = reportTitle + "_" + dateString;
-        reportDirectory = new File(actualReportTitle);
-        reportFile = new File(actualReportTitle + ".report.csv");
-        File reportDirectory = new File(reportFile.getParent());
-        if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
-            throw new RuntimeException("Error creating report directory");
-        }
-        try {
-            reportFileWriter = new FileWriter(reportFile);
-            reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Dataset,Standardization,#Clusters,#Unclustered,Silhouette index, S_Dbw index, Purity, Rand index\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void saveFullReport(Clusterer clusterer, ClusterEvaluation evaluation, int currentIteration) {
-        String filename = "experiment_" + currentIteration + ".txt";
-        File file = new File(reportDirectory, filename);
-        FileWriter filewriter;
-        try {
-            filewriter = new FileWriter(file);
-            filewriter.flush();
-            filewriter.write(clusterer.toString());
-            filewriter.write(evaluation.toString());
-            filewriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void main(String[] args) {
+        if (args.length != 2) {
+            System.err.println("Wrong use. Format <reportTitle> <nThreads>");
+            return;
+        }
+        reportTitle = args[0];
+        nThreads = Integer.parseInt(args[1]);
+
         setExperiments();
         setSaveResults();
 
@@ -134,9 +52,9 @@ public class LargeRun {
 
                         String control = "Iteration " + currentIteration + " of " + totalIterations + ": " +
                                 " clustering: " + c +
-                                " configuration: " + config +
-                                " dataset: " + d +
-                                " standardization: " + z;
+                                " | configuration: " + config +
+                                " | dataset: " + d +
+                                " | standardization: " + z;
                         System.out.println(control);
 
                         Clusterer clusterer = LoadByName.clusterer("algorithms." + c);
@@ -167,6 +85,97 @@ public class LargeRun {
         System.out.println("Finish");
         try {
             reportFileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void setExperiments() {
+        datasets = new String[]{
+//                "component_relational",
+                "eastwest_relational",
+//                "elephant_relational",
+//                "fox_relational",
+//                "function_relational",
+//                "musk1_relational",
+//                "musk2_relational",
+//                "mutagenesis3_atoms_relational",
+//                "mutagenesis3_bonds_relational",
+//                "mutagenesis3_chains_relational",
+//                "process_relational",
+//                "suramin_relational",
+//                "tiger_relational",
+//                "trx_relational",
+                "westeast_relational"
+        };
+
+        standardization = new String[]{
+                "",
+                "-z4",
+                "-z5"
+        };
+
+        clustering = new String[]{
+                "MIDBSCAN",
+                "MISimpleKMeans",
+                "BAMIC",
+        };
+
+        List<String> kMeansConfig = new ArrayList<>();
+        for (int k = 2; k <= 6; ++k) {
+            for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
+                kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
+            }
+        }
+        List<String> dbscanConfig = new ArrayList<>();
+        for (double eps = 0.6; eps <= 1.6; eps += 0.2) {
+            for (int minPts = 2; minPts <= 6; ++minPts) {
+                for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
+                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausdorff);
+                }
+            }
+        }
+
+        clusterConfig = new HashMap<>();
+        clusterConfig.put("MISimpleKMeans", kMeansConfig);
+        clusterConfig.put("BAMIC", kMeansConfig);
+        clusterConfig.put("MIDBSCAN", dbscanConfig);
+    }
+
+    private static void setSaveResults() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        Date date = new Date(System.currentTimeMillis());
+        String dateString = dateFormat.format(date);
+        String actualReportTitle = reportTitle + "_" + dateString;
+        reportDirectory = new File(actualReportTitle);
+        if (!reportDirectory.mkdir()) {
+            throw new RuntimeException("Error creating report directory");
+        }
+        File reportFile = new File(actualReportTitle + ".report.csv");
+        System.out.println(reportFile.getAbsoluteFile().getParent());
+        File parentDirectory = new File(reportFile.getAbsoluteFile().getParent());
+        if (!parentDirectory.exists() && !parentDirectory.mkdirs()) {
+            throw new RuntimeException("Error creating report directory");
+        }
+        try {
+            reportFileWriter = new FileWriter(reportFile);
+            reportFileWriter.flush();
+            reportFileWriter.write("Algorithm,Configuration,Dataset,Standardization,#Clusters,#Unclustered,Silhouette index, S_Dbw index, Purity, Rand index\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveFullReport(Clusterer clusterer, ClusterEvaluation evaluation, int currentIteration) {
+        String filename = "experiment_" + currentIteration + ".txt";
+        File file = new File(reportDirectory, filename);
+        FileWriter filewriter;
+        try {
+            filewriter = new FileWriter(file);
+            filewriter.flush();
+            filewriter.write(clusterer.toString());
+            filewriter.write(evaluation.toString());
+            filewriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
