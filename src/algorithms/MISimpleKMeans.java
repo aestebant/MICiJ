@@ -11,6 +11,7 @@ import weka.core.Capabilities.Capability;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +47,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     private double t1 = -1.25D;
     private int executionSlots = 1;
     private transient ExecutorService executorPool;
+    private double elapsedTime;
 
     public MISimpleKMeans() {
         this.m_SeedDefault = 10;
@@ -134,8 +136,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     public void buildClusterer(Instances data) throws Exception {
         this.getCapabilities().testWithFail(data);
 
+        long startTime = System.currentTimeMillis();
         int numInstAttributes = data.get(0).relationalValue(1).numAttributes();
-
         Instances instances = new Instances(data);
         instances.setClassIndex(-1);
 
@@ -303,7 +305,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         }
 
         this.executorPool.shutdown();
-        this.distFunction.clean();
+
+        long finishTime = System.currentTimeMillis();
+        elapsedTime = (double) (finishTime - startTime) / 1000.0D;
     }
 
     protected void randomInit(Instances data) throws Exception {
@@ -856,6 +860,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         for (int i = 0; i < this.startingPoints.numInstances(); ++i) {
             result.append("\tCluster ").append(i).append(": ").append(this.centroids.instance(i)).append("\n");
         }
+        DecimalFormat decimalFormat = new DecimalFormat(".##");
+        result.append("Elapsed time: ").append(decimalFormat.format(elapsedTime)).append("\n");
 
         result.append(printSurvey());
 
