@@ -654,8 +654,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         return this.distFunction;
     }
 
-    public void setDistanceFunction(DistanceFunction df) throws Exception {
+    public void setDistanceFunction(DistanceFunction df, String[] options) throws Exception {
         this.distFunction = df;
+        distFunction.setOptions(options);
     }
 
     public String preserveInstancesOrderTipText() {
@@ -748,9 +749,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
             String className = distFunctionClassSpec[0];
             distFunctionClassSpec[0] = "";
-            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distFunctionClassSpec));
+            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distFunctionClassSpec), options);
         } else {
-            this.setDistanceFunction(new HausdorffDistance());
+            this.setDistanceFunction(new HausdorffDistance(), options);
         }
 
         this.preserveOrder = Utils.getFlag("O", options);
@@ -810,6 +811,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         StringBuilder result = new StringBuilder();
 
         result.append("\nNumber of iterations: ").append(this.iterations).append("\n");
+        result.append("Distance-type: ").append(distFunction).append("\n");
         if (!this.fastDistCalc) {
             if (this.distFunction instanceof EuclideanDistance) {
                 result.append("Within cluster sum of squared errors: ").append(Utils.sum(this.squaredErrors)).append("\n");

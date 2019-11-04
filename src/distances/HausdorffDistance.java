@@ -11,7 +11,7 @@ public class HausdorffDistance implements DistanceFunction {
     private static final int MAX = 2;
     private static final int AVE = 3;
 
-    private int option = MAX;
+    private int type = AVE;
 
     private Instances instances;
     private String attributeIndices;
@@ -33,7 +33,7 @@ public class HausdorffDistance implements DistanceFunction {
         assert i1.numAttributes() == i2.numAttributes();
 
         double distance = 0D;
-        switch (option) {
+        switch (type) {
             case MIN:
                 distance = minHausdorff(i1, i2);
                 break;
@@ -199,7 +199,7 @@ public class HausdorffDistance implements DistanceFunction {
     @Override
     public String toString() {
         String result = "ERROR";
-        switch (option) {
+        switch (type) {
             case MIN:
                 result = "Minimal Hausdorff Distance";
                 break;
@@ -267,12 +267,20 @@ public class HausdorffDistance implements DistanceFunction {
 
     @Override
     public Enumeration<Option> listOptions() {
-        return null;
+        Vector<Option> vector = new Vector<>();
+        vector.add(new Option("Type of distance (default average).", "hausdorff-type", 1, "-hausdorff-type <average|minimal|maximal>"));
+        return vector.elements();
     }
 
     @Override
-    public void setOptions(String[] strings) throws Exception {
-
+    public void setOptions(String[] options) throws Exception {
+        String type = Utils.getOption("hausdorff-type", options);
+        if (type.equals("minimal"))
+            this.type = MIN;
+        else if (type.equals("maximal"))
+            this.type = MAX;
+        else
+            this.type = AVE;
     }
 
     @Override

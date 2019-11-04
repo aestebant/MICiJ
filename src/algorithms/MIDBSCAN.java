@@ -140,7 +140,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         Vector<Option> vector = new Vector<>();
         vector.addElement(new Option("\tepsilon (default = 0.9)", "E", 1, "-E <double>"));
         vector.addElement(new Option("\tminPoints (default = 6)", "M", 1, "-M <int>"));
-        vector.add(new Option("\tDistance function to use.\n\t(default: weka.core.EuclideanDistance)", "A", 1, "-A <classname and options>"));
+        vector.add(new Option("\tDistance function to use.\n\t(default: HausdorffDistance)", "A", 1, "-A <classname and options>"));
         vector.add(new Option("\tOutput clusters assignments", "output-clusters", 0, "-output-clusters"));
         return vector.elements();
     }
@@ -165,9 +165,9 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
             }
             String className = distSpec[0];
             distSpec[0] = "";
-            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distSpec));
+            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distSpec), options);
         } else {
-            this.setDistanceFunction(new HausdorffDistance());
+            this.setDistanceFunction(new HausdorffDistance(), options);
         }
 
         printClusterAssignments = Utils.getFlag("output-clusters", options);
@@ -201,8 +201,9 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         return this.distFunction;
     }
 
-    public void setDistanceFunction(DistanceFunction df) {
+    public void setDistanceFunction(DistanceFunction df, String[] options) throws Exception {
         this.distFunction = df;
+        distFunction.setOptions(options);
     }
 
     public String distanceFunctionTipText() {
