@@ -857,8 +857,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         }
 
         result.append("Final cluster centroids:\n");
-        for (int i = 0; i < this.startingPoints.numInstances(); ++i) {
-            result.append("\tCluster ").append(i).append(": ").append(this.centroids.instance(i)).append("\n");
+        for (int i = 0; i < centroids.numInstances(); ++i) {
+            result.append("\tCluster ").append(i).append(": ").append(centroids.instance(i)).append("\n");
         }
         DecimalFormat decimalFormat = new DecimalFormat(".##");
         result.append("Elapsed time: ").append(decimalFormat.format(elapsedTime)).append("\n");
