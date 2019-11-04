@@ -1053,28 +1053,28 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     private class KMeansClusterTask implements Callable<Boolean> {
-        int m_start;
-        int m_end;
-        Instances m_inst;
-        int[] m_clusterAssignments;
+        int start;
+        int end;
+        Instances inst;
+        int[] clusterAssignments;
 
         KMeansClusterTask(Instances inst, int start, int end, int[] clusterAssignments) {
-            this.m_start = start;
-            this.m_end = end;
-            this.m_inst = inst;
-            this.m_clusterAssignments = clusterAssignments;
+            this.start = start;
+            this.end = end;
+            this.inst = inst;
+            this.clusterAssignments = clusterAssignments;
         }
 
         public Boolean call() {
             boolean converged = true;
-            for (int i = this.m_start; i < this.m_end; ++i) {
-                Instance toCluster = this.m_inst.instance(i);
+            for (int i = this.start; i < this.end; ++i) {
+                Instance toCluster = this.inst.instance(i);
                 long[] instanceCanopies = MISimpleKMeans.this.useCanopi ? MISimpleKMeans.this.dataPointCanopyAssignments.get(i) : null;
                 int newC = this.clusterInstance(toCluster, instanceCanopies);
-                if (newC != this.m_clusterAssignments[i]) {
+                if (newC != this.clusterAssignments[i]) {
                     converged = false;
                 }
-                this.m_clusterAssignments[i] = newC;
+                this.clusterAssignments[i] = newC;
             }
             return converged;
         }

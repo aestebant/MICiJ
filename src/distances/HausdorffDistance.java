@@ -12,25 +12,17 @@ public class HausdorffDistance implements DistanceFunction {
     private static final int AVE = 3;
 
     private int type = AVE;
-
-    private Instances instances;
-    private String attributeIndices;
-    private boolean invertSelection = false;
+    private DistanceFunction df;
 
     @Override
     public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
         Instances i1 = preprocess(bag1);
-        Instances i2;
-        // Comprobar si se está calculando la distancia con un centroide directamente
-        if (!bag2.attribute(1).isRelationValued() && bag2.numAttributes() == i1.numAttributes()) {
-            i2 = new Instances(i1, 1);
-            i2.add(bag2);
-        }
-        else {
-            i2 = preprocess(bag2);
-        }
+        Instances i2 = preprocess(bag2);
 
         assert i1.numAttributes() == i2.numAttributes();
+
+        df = new EuclideanDistance();
+        df.setInstances(i1);
 
         double distance = 0D;
         switch (type) {
@@ -79,104 +71,59 @@ public class HausdorffDistance implements DistanceFunction {
     }
 
     private Instances preprocess(Instance bag) {
-        Instances instances;
+        boolean isBag = false;
         try {
-            if (bag.attribute(1).isRelationValued())
-                instances = bag.relationalValue(1);
-            else {
-                ArrayList<Attribute> attInfo = new ArrayList<>(bag.numAttributes());
-                for (int i = 0; i < bag.numAttributes(); ++i)
-                    attInfo.add(new Attribute("att" + i));
-                instances = new Instances("aux", attInfo, 1);
-                instances.add(bag);
-            }
+            isBag = bag.attribute(1).isRelationValued();
         } catch (Exception ignored) {
-            ArrayList<Attribute> attInfo = new ArrayList<>(bag.numAttributes());
-            for (int i = 0; i < bag.numAttributes(); ++i)
-                attInfo.add(new Attribute("att" + i));
-            instances = new Instances("aux", attInfo, 1);
-            instances.add(bag);
+            //Capturar excepción Instance doesn't have access to a dataset e ignorarla.
         }
-        return instances;
+
+        if (isBag)
+            return new Instances(bag.relationalValue(1));
+        else {
+            ArrayList<Attribute> attributes = new ArrayList<>(bag.numAttributes());
+            for (int i = 0; i < bag.numAttributes(); ++i) {
+                attributes.add(new Attribute("att" + i));
+            }
+            Instances instances = new Instances("aux", attributes, 1);
+            instances.add(bag);
+            return instances;
+        }
     }
 
     private double maxHausdorff(Instances i1, Instances i2) {
-
-        double[][] distances = euclideanDistance(i1, i2);
-
-        List<Double> minByRows = new ArrayList<>(i1.size());
-        for (int i = 0; i < i1.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distances[i]).summaryStatistics();
-            minByRows.add(stat.getMin());
-        }
-
+        double[][] distances = computeDistancesMatrix(i1, i2);
+        List<Double> minByRows = getMinByRows(distances);
         double[][] distancesTrans = transpose(distances);
-        List<Double> minByCols = new ArrayList<>(i2.size());
-        for (int i = 0; i < i2.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distancesTrans[i]).summaryStatistics();
-            minByCols.add(stat.getMin());
-        }
-
+        List<Double> minByCols = getMinByRows(distancesTrans);
         return Math.max(Collections.max(minByRows), Collections.max(minByCols));
     }
 
     private double minHausdorff(Instances i1, Instances i2) {
-
-        double[][] distances = euclideanDistance(i1, i2);
-
-        List<Double> minByRows = new ArrayList<>(i1.size());
-        for (int i = 0; i < i1.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distances[i]).summaryStatistics();
-            minByRows.add(stat.getMin());
-        }
-
+        double[][] distances = computeDistancesMatrix(i1, i2);
+        List<Double> minByRows = getMinByRows(distances);
         double[][] distancesTrans = transpose(distances);
-        List<Double> minByCols = new ArrayList<>(i2.size());
-        for (int i = 0; i < i2.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distancesTrans[i]).summaryStatistics();
-            minByCols.add(stat.getMin());
-        }
-
+        List<Double> minByCols = getMinByRows(distancesTrans);
         return Math.min(Collections.min(minByRows), Collections.min(minByCols));
     }
 
     private double aveHausdorff(Instances i1, Instances i2) {
-
-        double[][] distances = euclideanDistance(i1, i2);
-
-        List<Double> minByRows = new ArrayList<>(i1.size());
-        for (int i = 0; i < i1.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distances[i]).summaryStatistics();
-            minByRows.add(stat.getMin());
-        }
-
+        double[][] distances = computeDistancesMatrix(i1, i2);
+        List<Double> minByRows = getMinByRows(distances);
         double[][] distancesTrans = transpose(distances);
-
-        List<Double> minByCols = new ArrayList<>(i2.size());
-        for (int i = 0; i < i2.size(); ++i) {
-            DoubleSummaryStatistics stat = Arrays.stream(distancesTrans[i]).summaryStatistics();
-            minByCols.add(stat.getMin());
-        }
-
+        List<Double> minByCols = getMinByRows(distancesTrans);
         double sum1 = minByRows.stream().mapToDouble(Double::doubleValue).sum();
         double sum2 = minByCols.stream().mapToDouble(Double::doubleValue).sum();
-
         return (sum1 + sum2) / (i1.size() + i2.size());
     }
 
-    private double[][] euclideanDistance(Instances i1, Instances i2) {
+    private double[][] computeDistancesMatrix(Instances i1, Instances i2) {
         int size1 = i1.size();
         int size2 = i2.size();
-
         double[][] distances = new double[size1][size2];
         for (int i = 0; i < size1; ++i) {
             for (int j = 0; j < size2; ++j) {
-                double sum = 0D;
-                for (int k = 0; k < i1.numAttributes(); ++k) {
-                    double diff = i1.get(i).value(k) - i2.get(j).value(k);
-                    sum += diff * diff;
-                }
-                distances[i][j] = Math.sqrt(sum);
+                distances[i][j] = df.distance(i1.get(i), i2.get(j));
             }
         }
         return distances;
@@ -194,6 +141,15 @@ public class HausdorffDistance implements DistanceFunction {
             }
         }
         return result;
+    }
+
+    private List<Double> getMinByRows(double[][] matrix) {
+        List<Double> minByRows = new ArrayList<>(matrix.length);
+        for (double[] row : matrix) {
+            DoubleSummaryStatistics stat = Arrays.stream(row).summaryStatistics();
+            minByRows.add(stat.getMin());
+        }
+        return minByRows;
     }
 
     @Override
@@ -237,32 +193,29 @@ public class HausdorffDistance implements DistanceFunction {
 
     @Override
     public void setInstances(Instances instances) {
-        this.instances = instances;
     }
 
     @Override
     public Instances getInstances() {
-        return instances;
+        return null;
     }
 
     @Override
     public void setAttributeIndices(String s) {
-        attributeIndices = s;
     }
 
     @Override
     public String getAttributeIndices() {
-        return attributeIndices;
+        return null;
     }
 
     @Override
     public void setInvertSelection(boolean b) {
-        invertSelection = b;
     }
 
     @Override
     public boolean getInvertSelection() {
-        return invertSelection;
+        return false;
     }
 
     @Override

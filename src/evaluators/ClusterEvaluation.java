@@ -221,9 +221,10 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
                 if (i == j) {
                     break;
                 }
-                Instance u = new DenseInstance(numAttributes);
+                double[] means = new double[numAttributes];
                 for (int k = 0; k < numAttributes; ++k)
-                    u.setValue(k, (clustersCenters.get(i).value(k) + clustersCenters.get(j).value(k) / 2));
+                    means[k] = (clustersCenters.get(i).value(k) + clustersCenters.get(j).value(k)) / 2;
+                Instance u = new DenseInstance(1D, means);
 
                 double densityU = 0D;
                 double densityI = 0D;
@@ -280,12 +281,12 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     }
 
     private double computePurity() {
-        int purity = 0;
+        double purity = 0;
         for(int i = 0; i < numClusters; ++i) {
             if (Arrays.stream(confusion[i]).max().isPresent())
                 purity += Arrays.stream(confusion[i]).max().getAsInt();
         }
-        return (double) purity / instances.numInstances();
+        return purity / instances.numInstances();
     }
 
     private static void mapClasses(int numClusters, int lev, int[][] counts, int[] clusterTotals, double[] current, double[] best, int error) throws Exception {
