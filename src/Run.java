@@ -1,10 +1,10 @@
 import algorithms.MyClusterer;
 import evaluators.ClusterEvaluation;
+import utils.LoadByName;
 import utils.ProcessDataset;
-import weka.clusterers.AbstractClusterer;
 import weka.clusterers.Clusterer;
+import weka.core.Utils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,15 +36,16 @@ public class Run {
         };
 
         String[] clustering = {
-//                "MIDBSCAN",
-//                "MISimpleKMeans",
-                "BAMIC"
+                "MIDBSCAN",
+                "MISimpleKMeans",
+//                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 1.4 -M 8");
-        options.put("MISimpleKMeans", "-num-slots 2 -V");
+        options.put("MIDBSCAN", " -E 0.5 -M 2 -output-clusters -hausdorff-type average");
+        options.put("MISimpleKMeans", "-num-slots 2 -V -hausdorff-type average");
         options.put("BAMIC", "-num-slots 2 -V");
+        options.put("MIOPTICS", "");
 
         for (String d : datasets) {
             for (String z : standardization) {
@@ -56,23 +57,10 @@ public class Run {
                     System.out.println("Standarization: " + z);
                     System.out.println("=========================================");
 
-                    Class<? extends AbstractClusterer> absCluster = null;
-                    try {
-                        absCluster = Class.forName("algorithms." + c).asSubclass(AbstractClusterer.class);
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    assert absCluster != null;
-                    Clusterer clusterer = null;
-                    try {
-                        clusterer = absCluster.getDeclaredConstructor().newInstance();
-                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                        e.printStackTrace();
-                    }
-                    assert clusterer != null;
+                    Clusterer clusterer = LoadByName.clusterer("algorithms." + c);
 
                     try {
-                        ((MyClusterer) clusterer).setOptions(weka.core.Utils.splitOptions(options.get(c)));
+                        ((MyClusterer) clusterer).setOptions(Utils.splitOptions(options.get(c)));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -84,12 +72,16 @@ public class Run {
                     }
                     System.out.println(clusterer.toString());
 
-                    String evalOptions = "-t datasets/" + d + z + ".arff -c last";
+                    ClusterEvaluation evaluation = new ClusterEvaluation();
+                    String evalOptions = " -c last";
                     try {
-                        System.out.println(ClusterEvaluation.evaluateClusterer(clusterer, weka.core.Utils.splitOptions(evalOptions)));
+                        evaluation.setOptions(Utils.splitOptions(evalOptions));
+                        evaluation.setClusterer(clusterer, Utils.splitOptions(options.get(c)));
+                        evaluation.evaluateClusterer(ProcessDataset.readArff("datasets/" + d + z + ".arff"));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    System.out.println(evaluation);
                 }
             }
 
