@@ -430,6 +430,30 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         return result.toString();
     }
 
+    public int getUnclusteredInstances() {
+        return unclusteredInstances;
+    }
+
+    public int getNumClusters() {
+        return numClusters;
+    }
+
+    public double getSilhouette() {
+        return silhouette;
+    }
+
+    public double getSdbw() {
+        return sdbw;
+    }
+
+    public double getPurity() {
+        return purity;
+    }
+
+    public double getRand() {
+        return rand;
+    }
+
     //TODO No adaptado a MI
     private String attributeValuesString(Instance instance, Range attRange) {
         StringBuilder text = new StringBuilder();
