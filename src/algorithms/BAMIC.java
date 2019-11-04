@@ -13,7 +13,7 @@ public class BAMIC extends MISimpleKMeans {
 
     @Override
     protected void randomInit(Instances data) throws Exception {
-        this.m_ClusterCentroids = new Instances(data, this.m_NumClusters);
+        this.centroids = new Instances(data, this.numClusters);
 
         Random random = new Random(this.getSeed());
         Map<DecisionTableHashKey, Integer> initialClusters = new HashMap<>();
@@ -22,15 +22,15 @@ public class BAMIC extends MISimpleKMeans {
             int bagIdx = random.nextInt(i + 1);
             DecisionTableHashKey hk = new DecisionTableHashKey(data.get(bagIdx), data.numAttributes(), true);
             if (!initialClusters.containsKey(hk)) {
-                this.m_ClusterCentroids.add(data.get(bagIdx));
+                this.centroids.add(data.get(bagIdx));
                 initialClusters.put(hk, null);
             }
             data.swap(i, bagIdx);
-            if (this.m_ClusterCentroids.numInstances() == this.m_NumClusters) {
+            if (this.centroids.numInstances() == this.numClusters) {
                 break;
             }
         }
-        this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
+        this.startingPoints = new Instances(this.centroids);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class BAMIC extends MISimpleKMeans {
         int idxMin = 0;
         double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < members.numInstances(); ++i) {
-            double distance = m_DistanceFunction.distance(members.get(i), aux.lastInstance());
+            double distance = distFunction.distance(members.get(i), aux.lastInstance());
             if (distance < minDistance) {
                 minDistance = distance;
                 idxMin = i;
@@ -61,7 +61,7 @@ public class BAMIC extends MISimpleKMeans {
         }
 
         if (addToCentroidInstances) {
-            this.m_ClusterCentroids.add(members.get(idxMin));
+            this.centroids.add(members.get(idxMin));
         }
 
         return members.get(idxMin);

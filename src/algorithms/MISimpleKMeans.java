@@ -18,34 +18,34 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer, NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
-    int m_NumClusters = 2;
-    private int m_MaxIterations = 500;
-    private int m_initializationMethod = 0;
-    DistanceFunction m_DistanceFunction = new HausdorffDistance();
-    private boolean m_PreserveOrder = false;
-    private boolean m_displayStdDevs = false;
-    private boolean m_FastDistanceCalc = false;
-    private boolean m_speedUpDistanceCompWithCanopies = false;
+    int numClusters = 2;
+    private int maxIterations = 500;
+    private int initializationMethod = 0;
+    DistanceFunction distFunction = new HausdorffDistance();
+    private boolean preserveOrder = false;
+    private boolean showStdDevs = false;
+    private boolean fastDistCalc = false;
+    private boolean useCanopi = false;
 
-    Instances m_initialStartPoints;
-    Instances m_ClusterCentroids;
-    private Instances m_ClusterStdDevs;
-    private double[] m_FullMeansOrMediansOrModes;
-    private double[] m_FullStdDevs;
-    private double[] m_ClusterSizes;
-    private int m_Iterations = 0;
-    private double[] m_squaredErrors;
-    private int[] m_Assignments = null;
-    private List<long[]> m_centroidCanopyAssignments;
-    private List<long[]> m_dataPointCanopyAssignments;
-    private Canopy m_canopyClusters;
-    private int m_maxCanopyCandidates = 100;
-    private int m_periodicPruningRate = 10000;
-    private double m_minClusterDensity = 2.0D;
-    private double m_t2 = -1.0D;
-    private double m_t1 = -1.25D;
-    private int m_executionSlots = 1;
-    private transient ExecutorService m_executorPool;
+    Instances startingPoints;
+    Instances centroids;
+    private Instances clusterStdDevs;
+    private double[] fullMeans;
+    private double[] fullStdDevs;
+    private double[] clustersSize;
+    private int iterations = 0;
+    private double[] squaredErrors;
+    private int[] assignments = null;
+    private List<long[]> centroidCanopyAssignments;
+    private List<long[]> dataPointCanopyAssignments;
+    private Canopy canopyClusters;
+    private int maxCanopyCandidates = 100;
+    private int periodicPruningRate = 10000;
+    private double minClusterDensity = 2.0D;
+    private double t2 = -1.0D;
+    private double t1 = -1.25D;
+    private int executionSlots = 1;
+    private transient ExecutorService executorPool;
 
     public MISimpleKMeans() {
         this.m_SeedDefault = 10;
@@ -53,10 +53,10 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     private void startExecutorPool() {
-        if (this.m_executorPool != null) {
-            this.m_executorPool.shutdownNow();
+        if (this.executorPool != null) {
+            this.executorPool.shutdownNow();
         }
-        this.m_executorPool = Executors.newFixedThreadPool(this.m_executionSlots);
+        this.executorPool = Executors.newFixedThreadPool(this.executionSlots);
     }
 
     public TechnicalInformation getTechnicalInformation() {
@@ -88,17 +88,17 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         int emptyClusterCount = 0;
         List<Future<Instance>> results = new ArrayList<>();
         Future<Instance> d;
-        for (int i = 0; i < this.m_NumClusters; ++i) {
+        for (int i = 0; i < this.numClusters; ++i) {
             if (clusters[i].numInstances() == 0) {
                 ++emptyClusterCount;
             } else {
-                d = this.m_executorPool.submit(new MISimpleKMeans.KMeansComputeCentroidTask(i, clusters[i]));
+                d = this.executorPool.submit(new MISimpleKMeans.KMeansComputeCentroidTask(i, clusters[i]));
                 results.add(d);
             }
         }
         try {
             for (Future<Instance> result : results) {
-                this.m_ClusterCentroids.add(result.get());
+                this.centroids.add(result.get());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -107,17 +107,17 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     private boolean launchAssignToClusters(Instances insts, int[] clusterAssignments) throws Exception {
-        int numPerTask = insts.numInstances() / this.m_executionSlots;
+        int numPerTask = insts.numInstances() / this.executionSlots;
         List<Future<Boolean>> results = new ArrayList<>();
 
-        for (int i = 0; i < this.m_executionSlots; ++i) {
+        for (int i = 0; i < this.executionSlots; ++i) {
             int start = i * numPerTask;
             int end = start + numPerTask;
-            if (i == this.m_executionSlots - 1) {
+            if (i == this.executionSlots - 1) {
                 end = insts.numInstances();
             }
 
-            Future<Boolean> futureKM = this.m_executorPool.submit(new MISimpleKMeans.KMeansClusterTask(insts, start, end, clusterAssignments));
+            Future<Boolean> futureKM = this.executorPool.submit(new MISimpleKMeans.KMeansClusterTask(insts, start, end, clusterAssignments));
             results.add(futureKM);
         }
 
@@ -143,39 +143,39 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         for (int i = 1; i < instances.size(); ++i) {
             aux.addAll(instances.get(i).relationalValue(1));
         }
-        if (this.m_displayStdDevs) {
-            this.m_FullStdDevs = aux.variances();
+        if (this.showStdDevs) {
+            this.fullStdDevs = aux.variances();
         }
 
-        this.m_FullMeansOrMediansOrModes = new double[numInstAttributes];
+        this.fullMeans = new double[numInstAttributes];
         for (int i = 0; i < numInstAttributes; ++i)
-            this.m_FullMeansOrMediansOrModes[i] = aux.meanOrMode(i);
+            this.fullMeans[i] = aux.meanOrMode(i);
 
-        if (this.m_displayStdDevs) {
+        if (this.showStdDevs) {
             for (int i = 0; i < numInstAttributes; ++i) {
-                this.m_FullStdDevs[i] = Math.sqrt(this.m_FullStdDevs[i]);
+                this.fullStdDevs[i] = Math.sqrt(this.fullStdDevs[i]);
             }
         }
 
         int[] clusterAssignments = new int[instances.numInstances()];
-        if (this.m_PreserveOrder) {
-            this.m_Assignments = clusterAssignments;
+        if (this.preserveOrder) {
+            this.assignments = clusterAssignments;
         }
 
         Instances initInstances;
-        if (this.m_PreserveOrder) {
+        if (this.preserveOrder) {
             initInstances = new Instances(instances);
         } else {
             initInstances = instances;
         }
 
-        if (this.m_speedUpDistanceCompWithCanopies) {
+        if (this.useCanopi) {
             canopyInit(initInstances);
-            this.m_centroidCanopyAssignments = new ArrayList<>();
-            this.m_dataPointCanopyAssignments = new ArrayList<>();
+            this.centroidCanopyAssignments = new ArrayList<>();
+            this.dataPointCanopyAssignments = new ArrayList<>();
         }
 
-        switch (this.m_initializationMethod) {
+        switch (this.initializationMethod) {
             case 0:
                 this.randomInit(initInstances);
                 break;
@@ -190,37 +190,37 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 break;
         }
 
-        if (this.m_speedUpDistanceCompWithCanopies) {
+        if (this.useCanopi) {
             for (int i = 0; i < instances.numInstances(); ++i) {
-                this.m_dataPointCanopyAssignments.add(this.m_canopyClusters.assignCanopies(instances.instance(i)));
+                this.dataPointCanopyAssignments.add(this.canopyClusters.assignCanopies(instances.instance(i)));
             }
         }
 
-        this.m_NumClusters = this.m_ClusterCentroids.numInstances();
-        this.m_squaredErrors = new double[this.m_NumClusters];
+        this.numClusters = this.centroids.numInstances();
+        this.squaredErrors = new double[this.numClusters];
         this.startExecutorPool();
 
-        this.m_Iterations = 0;
+        this.iterations = 0;
         int index;
         boolean converged = false;
-        Instances[] bagsPerCluster = new Instances[this.m_NumClusters];
+        Instances[] bagsPerCluster = new Instances[this.numClusters];
         while (!converged) {
-            if (this.m_speedUpDistanceCompWithCanopies) {
-                this.m_centroidCanopyAssignments.clear();
-                for (int i = 0; i < this.m_ClusterCentroids.numInstances(); ++i) {
-                    this.m_centroidCanopyAssignments.add(this.m_canopyClusters.assignCanopies(this.m_ClusterCentroids.instance(i)));
+            if (this.useCanopi) {
+                this.centroidCanopyAssignments.clear();
+                for (int i = 0; i < this.centroids.numInstances(); ++i) {
+                    this.centroidCanopyAssignments.add(this.canopyClusters.assignCanopies(this.centroids.instance(i)));
                 }
             }
 
-            this.m_Iterations++;
+            this.iterations++;
             converged = true;
-            if (this.m_executionSlots > 1 && instances.numInstances() >= 2 * this.m_executionSlots) {
+            if (this.executionSlots > 1 && instances.numInstances() >= 2 * this.executionSlots) {
                 converged = this.launchAssignToClusters(instances, clusterAssignments);
             } else {
                 for (int i = 0; i < instances.numInstances(); ++i) {
                     Instance toCluster = instances.instance(i);
                     index = this.clusterProcessedInstance(toCluster, false, true,
-                            this.m_speedUpDistanceCompWithCanopies ? this.m_dataPointCanopyAssignments.get(i) : null);
+                            this.useCanopi ? this.dataPointCanopyAssignments.get(i) : null);
                     if (index != clusterAssignments[i]) {
                         converged = false;
                     }
@@ -228,9 +228,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 }
             }
 
-            this.m_ClusterCentroids = new Instances(m_ClusterCentroids, this.m_NumClusters);
+            this.centroids = new Instances(centroids, this.numClusters);
 
-            for (int cluster = 0; cluster < this.m_NumClusters; ++cluster) {
+            for (int cluster = 0; cluster < this.numClusters; ++cluster) {
                 bagsPerCluster[cluster] = new Instances(instances, 0);
             }
             for (int i = 0; i < instances.numInstances(); ++i) {
@@ -238,10 +238,10 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             }
 
             int emptyClusterCount = 0;
-            if (this.m_executionSlots > 1 && instances.numInstances() >= 2 * this.m_executionSlots) {
+            if (this.executionSlots > 1 && instances.numInstances() >= 2 * this.executionSlots) {
                 emptyClusterCount = this.launchMoveCentroids(bagsPerCluster);
             } else {
-                for (int cluster = 0; cluster < this.m_NumClusters; ++cluster) {
+                for (int cluster = 0; cluster < this.numClusters; ++cluster) {
                     if (bagsPerCluster[cluster].numInstances() == 0) {
                         emptyClusterCount++;
                     } else {
@@ -250,16 +250,16 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 }
             }
 
-            if (this.m_Iterations == this.m_MaxIterations) {
+            if (this.iterations == this.maxIterations) {
                 converged = true;
             }
 
             if (emptyClusterCount > 0) {
-                this.m_NumClusters -= emptyClusterCount;
+                this.numClusters -= emptyClusterCount;
                 if (!converged) {
-                    bagsPerCluster = new Instances[this.m_NumClusters];
+                    bagsPerCluster = new Instances[this.numClusters];
                 } else {
-                    Instances[] aux2 = new Instances[this.m_NumClusters];
+                    Instances[] aux2 = new Instances[this.numClusters];
                     index = 0;
                     int j = 0;
                     while (true) {
@@ -277,18 +277,18 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             }
         }
 
-        if (!this.m_FastDistanceCalc) {
+        if (!this.fastDistCalc) {
             for (int i = 0; i < instances.numInstances(); ++i) {
                 this.clusterProcessedInstance(instances.instance(i), true, false, null);
             }
         }
 
-        if (this.m_displayStdDevs) {
-            this.m_ClusterStdDevs = new Instances(instances.get(0).relationalValue(1), this.m_NumClusters);
+        if (this.showStdDevs) {
+            this.clusterStdDevs = new Instances(instances.get(0).relationalValue(1), this.numClusters);
         }
-        this.m_ClusterSizes = new double[this.m_NumClusters];
-        for (int i = 0; i < this.m_NumClusters; ++i) {
-            if (this.m_displayStdDevs) {
+        this.clustersSize = new double[this.numClusters];
+        for (int i = 0; i < this.numClusters; ++i) {
+            if (this.showStdDevs) {
                 Instances instancesPerCluster = new Instances(bagsPerCluster[i].get(0).relationalValue(1));
                 for (int j = 0; j < bagsPerCluster[i].numInstances(); ++j)
                     instancesPerCluster.addAll(bagsPerCluster[i].get(j).relationalValue(1));
@@ -297,17 +297,17 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 for (index = 0; index < numInstAttributes; ++index) {
                     variances[index] = Math.sqrt(variances[index]);
                 }
-                this.m_ClusterStdDevs.add(new DenseInstance(1D, variances));
+                this.clusterStdDevs.add(new DenseInstance(1D, variances));
             }
-            this.m_ClusterSizes[i] = bagsPerCluster[i].numInstances();
+            this.clustersSize[i] = bagsPerCluster[i].numInstances();
         }
 
-        this.m_executorPool.shutdown();
-        this.m_DistanceFunction.clean();
+        this.executorPool.shutdown();
+        this.distFunction.clean();
     }
 
     protected void randomInit(Instances data) throws Exception {
-        this.m_ClusterCentroids = new Instances(data.get(0).relationalValue(1), this.m_NumClusters);
+        this.centroids = new Instances(data.get(0).relationalValue(1), this.numClusters);
 
         Random random = new Random(this.getSeed());
         Map<DecisionTableHashKey, Integer> initialClusters = new HashMap<>();
@@ -321,42 +321,42 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 for (int j = 0; j < numInstAttributes; ++j)
                     mean[j] = data.get(bagIdx).relationalValue(1).meanOrMode(j);
                 Instance centroid = new DenseInstance(1D, mean);
-                this.m_ClusterCentroids.add(centroid);
+                this.centroids.add(centroid);
                 initialClusters.put(hk, null);
             }
             data.swap(i, bagIdx);
-            if (this.m_ClusterCentroids.numInstances() == this.m_NumClusters) {
+            if (this.centroids.numInstances() == this.numClusters) {
                 break;
             }
         }
-        this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
+        this.startingPoints = new Instances(this.centroids);
     }
 
     //TODO No adaptado a MI
     private void canopyInit(Instances data) throws Exception {
-        if (this.m_canopyClusters == null) {
-            this.m_canopyClusters = new Canopy();
-            this.m_canopyClusters.setNumClusters(this.m_NumClusters);
-            this.m_canopyClusters.setSeed(this.getSeed());
-            this.m_canopyClusters.setT2(this.getCanopyT2());
-            this.m_canopyClusters.setT1(this.getCanopyT1());
-            this.m_canopyClusters.setMaxNumCandidateCanopiesToHoldInMemory(this.getCanopyMaxNumCanopiesToHoldInMemory());
-            this.m_canopyClusters.setPeriodicPruningRate(this.getCanopyPeriodicPruningRate());
-            this.m_canopyClusters.setMinimumCanopyDensity(this.getCanopyMinimumCanopyDensity());
-            this.m_canopyClusters.setDebug(this.getDebug());
-            this.m_canopyClusters.buildClusterer(data);
+        if (this.canopyClusters == null) {
+            this.canopyClusters = new Canopy();
+            this.canopyClusters.setNumClusters(this.numClusters);
+            this.canopyClusters.setSeed(this.getSeed());
+            this.canopyClusters.setT2(this.getCanopyT2());
+            this.canopyClusters.setT1(this.getCanopyT1());
+            this.canopyClusters.setMaxNumCandidateCanopiesToHoldInMemory(this.getCanopyMaxNumCanopiesToHoldInMemory());
+            this.canopyClusters.setPeriodicPruningRate(this.getCanopyPeriodicPruningRate());
+            this.canopyClusters.setMinimumCanopyDensity(this.getCanopyMinimumCanopyDensity());
+            this.canopyClusters.setDebug(this.getDebug());
+            this.canopyClusters.buildClusterer(data);
         }
-        this.m_ClusterCentroids = this.m_canopyClusters.getCanopies();
-        this.m_initialStartPoints = new Instances(this.m_canopyClusters.getCanopies());
+        this.centroids = this.canopyClusters.getCanopies();
+        this.startingPoints = new Instances(this.canopyClusters.getCanopies());
     }
 
     //TODO No adaptado a MI
     private void farthestFirstInit(Instances data) throws Exception {
         FarthestFirst ff = new FarthestFirst();
-        ff.setNumClusters(this.m_NumClusters);
+        ff.setNumClusters(this.numClusters);
         ff.buildClusterer(data);
-        this.m_ClusterCentroids = ff.getClusterCentroids();
-        this.m_initialStartPoints = new Instances(this.m_ClusterCentroids);
+        this.centroids = ff.getClusterCentroids();
+        this.startingPoints = new Instances(this.centroids);
     }
 
     //TODO No adaptado a MI
@@ -364,20 +364,20 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         Random random = new Random(this.getSeed());
         Map<DecisionTableHashKey, String> initC = new HashMap<>();
         int index = random.nextInt(data.numInstances());
-        this.m_ClusterCentroids.add(data.instance(index));
+        this.centroids.add(data.instance(index));
         DecisionTableHashKey hk = new DecisionTableHashKey(data.instance(index), data.numAttributes(), true);
         initC.put(hk, null);
         int iteration = 0;
         int remainingInstances = data.numInstances() - 1;
-        if (this.m_NumClusters > 1) {
+        if (this.numClusters > 1) {
             double[] distances = new double[data.numInstances()];
             double[] cumProbs = new double[data.numInstances()];
 
             for (int i = 0; i < data.numInstances(); ++i) {
-                distances[i] = this.m_DistanceFunction.distance(data.instance(i), this.m_ClusterCentroids.instance(iteration));
+                distances[i] = this.distFunction.distance(data.instance(i), this.centroids.instance(iteration));
             }
 
-            for (int i = 1; i < this.m_NumClusters; ++i) {
+            for (int i = 1; i < this.numClusters; ++i) {
                 double[] weights = new double[data.numInstances()];
                 System.arraycopy(distances, 0, weights, 0, distances.length);
                 Utils.normalize(weights);
@@ -397,7 +397,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                         hk = new DecisionTableHashKey(candidateCenter, data.numAttributes(), true);
                         if (!initC.containsKey(hk)) {
                             initC.put(hk, null);
-                            this.m_ClusterCentroids.add(candidateCenter);
+                            this.centroids.add(candidateCenter);
                         } else {
                             System.err.println("We shouldn't get here....");
                         }
@@ -412,7 +412,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
                 for (int k = 0; k < data.numInstances(); ++k) {
                     if (distances[k] > 0.0D) {
-                        double newDist = this.m_DistanceFunction.distance(data.instance(k), this.m_ClusterCentroids.instance(iteration));
+                        double newDist = this.distFunction.distance(data.instance(k), this.centroids.instance(iteration));
                         if (newDist < distances[k]) {
                             distances[k] = newDist;
                         }
@@ -438,7 +438,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         Instance centroid = new DenseInstance(1.0D, means);
 
         if (addToCentroidInstances) {
-            this.m_ClusterCentroids.add(centroid);
+            this.centroids.add(centroid);
         }
         return centroid;
     }
@@ -447,24 +447,24 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         double minDist = 2.147483647E9D;
         int bestCluster = 0;
 
-        for (int i = 0; i < this.m_NumClusters; ++i) {
+        for (int i = 0; i < this.numClusters; ++i) {
             double dist;
             if (useFastDistCalc) {
-                if (this.m_speedUpDistanceCompWithCanopies && instanceCanopies != null && instanceCanopies.length > 0) {
+                if (this.useCanopi && instanceCanopies != null && instanceCanopies.length > 0) {
                     try {
-                        if (!Canopy.nonEmptyCanopySetIntersection(this.m_centroidCanopyAssignments.get(i), instanceCanopies)) {
+                        if (!Canopy.nonEmptyCanopySetIntersection(this.centroidCanopyAssignments.get(i), instanceCanopies)) {
                             continue;
                         }
                     } catch (Exception var12) {
                         var12.printStackTrace();
                     }
 
-                    dist = this.m_DistanceFunction.distance(instance, this.m_ClusterCentroids.get(i), minDist);
+                    dist = this.distFunction.distance(instance, this.centroids.get(i), minDist);
                 } else {
-                    dist = this.m_DistanceFunction.distance(instance, this.m_ClusterCentroids.get(i), minDist);
+                    dist = this.distFunction.distance(instance, this.centroids.get(i), minDist);
                 }
             } else {
-                dist = this.m_DistanceFunction.distance(instance, this.m_ClusterCentroids.get(i));
+                dist = this.distFunction.distance(instance, this.centroids.get(i));
             }
 
             if (dist < minDist) {
@@ -475,7 +475,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
         if (updateErrors) {
             minDist *= minDist * instance.weight();
-            double[] var10000 = this.m_squaredErrors;
+            double[] var10000 = this.squaredErrors;
             var10000[bestCluster] += minDist;
         }
 
@@ -489,7 +489,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
     @Override
     public int numberOfClusters() throws Exception {
-        return this.m_NumClusters;
+        return this.numClusters;
     }
 
     //TODO No adaptado a MI
@@ -522,12 +522,12 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         if (n <= 0) {
             throw new Exception("Number of clusters must be > 0");
         } else {
-            this.m_NumClusters = n;
+            this.numClusters = n;
         }
     }
 
     public int getNumClusters() {
-        return this.m_NumClusters;
+        return this.numClusters;
     }
 
     public String initializationMethodTipText() {
@@ -535,11 +535,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setInitializationMethod(Integer selection) {
-        this.m_initializationMethod = selection;
+        this.initializationMethod = selection;
     }
 
     public int getInitializationMethod() {
-        return this.m_initializationMethod;
+        return this.initializationMethod;
     }
 
     public String reduceNumberOfDistanceCalcsViaCanopiesTipText() {
@@ -547,11 +547,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setReduceNumberOfDistanceCalcsViaCanopies(boolean c) {
-        this.m_speedUpDistanceCompWithCanopies = c;
+        this.useCanopi = c;
     }
 
     public boolean getReduceNumberOfDistanceCalcsViaCanopies() {
-        return this.m_speedUpDistanceCompWithCanopies;
+        return this.useCanopi;
     }
 
     public String canopyPeriodicPruningRateTipText() {
@@ -559,11 +559,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setCanopyPeriodicPruningRate(int p) {
-        this.m_periodicPruningRate = p;
+        this.periodicPruningRate = p;
     }
 
     public int getCanopyPeriodicPruningRate() {
-        return this.m_periodicPruningRate;
+        return this.periodicPruningRate;
     }
 
     public String canopyMinimumCanopyDensityTipText() {
@@ -571,11 +571,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setCanopyMinimumCanopyDensity(double dens) {
-        this.m_minClusterDensity = dens;
+        this.minClusterDensity = dens;
     }
 
     public double getCanopyMinimumCanopyDensity() {
-        return this.m_minClusterDensity;
+        return this.minClusterDensity;
     }
 
     public String canopyMaxNumCanopiesToHoldInMemoryTipText() {
@@ -583,11 +583,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setCanopyMaxNumCanopiesToHoldInMemory(int max) {
-        this.m_maxCanopyCandidates = max;
+        this.maxCanopyCandidates = max;
     }
 
     public int getCanopyMaxNumCanopiesToHoldInMemory() {
-        return this.m_maxCanopyCandidates;
+        return this.maxCanopyCandidates;
     }
 
     public String canopyT2TipText() {
@@ -595,11 +595,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setCanopyT2(double t2) {
-        this.m_t2 = t2;
+        this.t2 = t2;
     }
 
     public double getCanopyT2() {
-        return this.m_t2;
+        return this.t2;
     }
 
     public String canopyT1TipText() {
@@ -607,11 +607,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setCanopyT1(double t1) {
-        this.m_t1 = t1;
+        this.t1 = t1;
     }
 
     public double getCanopyT1() {
-        return this.m_t1;
+        return this.t1;
     }
 
     public String maxIterationsTipText() {
@@ -622,12 +622,12 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         if (n <= 0) {
             throw new Exception("Maximum number of iterations must be > 0");
         } else {
-            this.m_MaxIterations = n;
+            this.maxIterations = n;
         }
     }
 
     public int getMaxIterations() {
-        return this.m_MaxIterations;
+        return this.maxIterations;
     }
 
     public String displayStdDevsTipText() {
@@ -635,11 +635,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setDisplayStdDevs(boolean stdD) {
-        this.m_displayStdDevs = stdD;
+        this.showStdDevs = stdD;
     }
 
     public boolean getDisplayStdDevs() {
-        return this.m_displayStdDevs;
+        return this.showStdDevs;
     }
 
     public String dontReplaceMissingValuesTipText() {
@@ -651,11 +651,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public DistanceFunction getDistanceFunction() {
-        return this.m_DistanceFunction;
+        return this.distFunction;
     }
 
     public void setDistanceFunction(DistanceFunction df) throws Exception {
-        this.m_DistanceFunction = df;
+        this.distFunction = df;
     }
 
     public String preserveInstancesOrderTipText() {
@@ -663,11 +663,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setPreserveInstancesOrder(boolean r) {
-        this.m_PreserveOrder = r;
+        this.preserveOrder = r;
     }
 
     public boolean getPreserveInstancesOrder() {
-        return this.m_PreserveOrder;
+        return this.preserveOrder;
     }
 
     public String fastDistanceCalcTipText() {
@@ -675,11 +675,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setFastDistanceCalc(boolean value) {
-        this.m_FastDistanceCalc = value;
+        this.fastDistCalc = value;
     }
 
     public boolean getFastDistanceCalc() {
-        return this.m_FastDistanceCalc;
+        return this.fastDistCalc;
     }
 
     public String numExecutionSlotsTipText() {
@@ -687,56 +687,56 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public void setNumExecutionSlots(int slots) {
-        this.m_executionSlots = slots;
+        this.executionSlots = slots;
     }
 
     public int getNumExecutionSlots() {
-        return this.m_executionSlots;
+        return this.executionSlots;
     }
 
     @Override
     public void setOptions(String[] options) throws Exception {
-        this.m_displayStdDevs = Utils.getFlag("V", options);
+        this.showStdDevs = Utils.getFlag("V", options);
 
         String initM = Utils.getOption("init", options);
         if (initM.length() > 0) {
             this.setInitializationMethod(Integer.parseInt(initM));
         }
 
-        this.m_speedUpDistanceCompWithCanopies = Utils.getFlag('C', options);
-        String temp = Utils.getOption("max-candidates", options);
-        if (temp.length() > 0) {
-            this.setCanopyMaxNumCanopiesToHoldInMemory(Integer.parseInt(temp));
+        this.useCanopi = Utils.getFlag('C', options);
+        String mc = Utils.getOption("max-candidates", options);
+        if (mc.length() > 0) {
+            this.setCanopyMaxNumCanopiesToHoldInMemory(Integer.parseInt(mc));
         }
 
-        temp = Utils.getOption("periodic-pruning", options);
-        if (temp.length() > 0) {
-            this.setCanopyPeriodicPruningRate(Integer.parseInt(temp));
+        String pp = Utils.getOption("periodic-pruning", options);
+        if (pp.length() > 0) {
+            this.setCanopyPeriodicPruningRate(Integer.parseInt(pp));
         }
 
-        temp = Utils.getOption("min-density", options);
-        if (temp.length() > 0) {
-            this.setCanopyMinimumCanopyDensity(Double.parseDouble(temp));
+        String md = Utils.getOption("min-density", options);
+        if (md.length() > 0) {
+            this.setCanopyMinimumCanopyDensity(Double.parseDouble(md));
         }
 
-        temp = Utils.getOption("t2", options);
-        if (temp.length() > 0) {
-            this.setCanopyT2(Double.parseDouble(temp));
+        String t2 = Utils.getOption("t2", options);
+        if (t2.length() > 0) {
+            this.setCanopyT2(Double.parseDouble(t2));
         }
 
-        temp = Utils.getOption("t1", options);
-        if (temp.length() > 0) {
-            this.setCanopyT1(Double.parseDouble(temp));
+        String t1 = Utils.getOption("t1", options);
+        if (t1.length() > 0) {
+            this.setCanopyT1(Double.parseDouble(t1));
         }
 
-        String optionString = Utils.getOption('N', options);
-        if (optionString.length() != 0) {
-            this.setNumClusters(Integer.parseInt(optionString));
+        String n = Utils.getOption('N', options);
+        if (n.length() != 0) {
+            this.setNumClusters(Integer.parseInt(n));
         }
 
-        optionString = Utils.getOption("I", options);
-        if (optionString.length() != 0) {
-            this.setMaxIterations(Integer.parseInt(optionString));
+        String i = Utils.getOption("I", options);
+        if (i.length() != 0) {
+            this.setMaxIterations(Integer.parseInt(i));
         }
 
         String distFunctionClass = Utils.getOption('A', options);
@@ -753,8 +753,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             this.setDistanceFunction(new HausdorffDistance());
         }
 
-        this.m_PreserveOrder = Utils.getFlag("O", options);
-        this.m_FastDistanceCalc = Utils.getFlag("fast", options);
+        this.preserveOrder = Utils.getFlag("O", options);
+        this.fastDistCalc = Utils.getFlag("fast", options);
         String slotsS = Utils.getOption("num-slots", options);
         if (slotsS.length() > 0) {
             this.setNumExecutionSlots(Integer.parseInt(slotsS));
@@ -768,7 +768,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         Vector<String> result = new Vector<>();
         result.add("-init");
         result.add(String.valueOf(this.getInitializationMethod()));
-        if (this.m_speedUpDistanceCompWithCanopies) {
+        if (this.useCanopi) {
             result.add("-C");
         }
         result.add("-max-candidates");
@@ -781,19 +781,19 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         result.add(String.valueOf(this.getCanopyT1()));
         result.add("-t2");
         result.add(String.valueOf(this.getCanopyT2()));
-        if (this.m_displayStdDevs) {
+        if (this.showStdDevs) {
             result.add("-V");
         }
         result.add("-N");
         result.add(String.valueOf(this.getNumClusters()));
         result.add("-A");
-        result.add((this.m_DistanceFunction.getClass().getName() + " " + Utils.joinOptions(this.m_DistanceFunction.getOptions())).trim());
+        result.add((this.distFunction.getClass().getName() + " " + Utils.joinOptions(this.distFunction.getOptions())).trim());
         result.add("-I");
         result.add(String.valueOf(this.getMaxIterations()));
-        if (this.m_PreserveOrder) {
+        if (this.preserveOrder) {
             result.add("-O");
         }
-        if (this.m_FastDistanceCalc) {
+        if (this.fastDistCalc) {
             result.add("-fast");
         }
         result.add("-num-slots");
@@ -803,22 +803,22 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
     }
 
     public String toString() {
-        if (this.m_ClusterCentroids == null) {
+        if (this.centroids == null) {
             return "No clusterer built yet!";
         }
 
         StringBuilder result = new StringBuilder();
 
-        result.append("\nNumber of iterations: ").append(this.m_Iterations).append("\n");
-        if (!this.m_FastDistanceCalc) {
-            if (this.m_DistanceFunction instanceof EuclideanDistance) {
-                result.append("Within cluster sum of squared errors: ").append(Utils.sum(this.m_squaredErrors)).append("\n");
+        result.append("\nNumber of iterations: ").append(this.iterations).append("\n");
+        if (!this.fastDistCalc) {
+            if (this.distFunction instanceof EuclideanDistance) {
+                result.append("Within cluster sum of squared errors: ").append(Utils.sum(this.squaredErrors)).append("\n");
             } else {
-                result.append("Sum of within cluster distances: ").append(Utils.sum(this.m_squaredErrors)).append("\n");
+                result.append("Sum of within cluster distances: ").append(Utils.sum(this.squaredErrors)).append("\n");
             }
         }
         result.append("Initial starting points (");
-        switch (this.m_initializationMethod) {
+        switch (this.initializationMethod) {
             case 0:
                 result.append("random");
                 break;
@@ -834,28 +834,28 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         }
         result.append("):\n");
 
-        if (this.m_initializationMethod != 2) {
-            for (int i = 0; i < this.m_initialStartPoints.numInstances(); ++i) {
-                result.append("\tCluster ").append(i).append(": ").append(this.m_initialStartPoints.instance(i)).append("\n");
+        if (this.initializationMethod != 2) {
+            for (int i = 0; i < this.startingPoints.numInstances(); ++i) {
+                result.append("\tCluster ").append(i).append(": ").append(this.startingPoints.instance(i)).append("\n");
             }
         } else {
-            result.append("\t").append(this.m_canopyClusters.toString(false)).append("\n");
+            result.append("\t").append(this.canopyClusters.toString(false)).append("\n");
         }
 
-        if (this.m_speedUpDistanceCompWithCanopies) {
+        if (this.useCanopi) {
             result.append("Reduced number of distance calculations by using canopies.\n");
-            if (this.m_initializationMethod != 2) {
-                result.append("\tCanopy T2 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT2())).append("\n");
-                result.append("\tCanopy T1 radius: ").append(String.format("%-10.3f", this.m_canopyClusters.getActualT1())).append("\n");
+            if (this.initializationMethod != 2) {
+                result.append("\tCanopy T2 radius: ").append(String.format("%-10.3f", this.canopyClusters.getActualT2())).append("\n");
+                result.append("\tCanopy T1 radius: ").append(String.format("%-10.3f", this.canopyClusters.getActualT1())).append("\n");
             }
         }
 
         result.append("Final cluster centroids:\n");
-        for (int i = 0; i < this.m_initialStartPoints.numInstances(); ++i) {
-            result.append("\tCluster ").append(i).append(": ").append(this.m_ClusterCentroids.instance(i)).append("\n");
+        for (int i = 0; i < this.startingPoints.numInstances(); ++i) {
+            result.append("\tCluster ").append(i).append(": ").append(this.centroids.instance(i)).append("\n");
         }
 
-        printSurvey(result);
+        result.append(printSurvey());
 
         return result.toString();
     }
@@ -876,23 +876,25 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         return temp.toString();
     }
 
-    private void printSurvey(StringBuilder result) {
+    private String printSurvey() {
+        StringBuilder result = new StringBuilder();
+
         Instances clustersToPrint;
         int numAttributes;
-        if (m_ClusterCentroids.attribute(1).isRelationValued()) {
-            clustersToPrint = new Instances(m_ClusterCentroids.get(0).relationalValue(1), m_NumClusters);
-            numAttributes = m_ClusterCentroids.get(0).relationalValue(1).numAttributes();
-            for (int i = 0; i < m_NumClusters; ++i) {
+        if (centroids.attribute(1).isRelationValued()) {
+            clustersToPrint = new Instances(centroids.get(0).relationalValue(1), numClusters);
+            numAttributes = centroids.get(0).relationalValue(1).numAttributes();
+            for (int i = 0; i < numClusters; ++i) {
                 double[] mean = new double[numAttributes];
                 for (int j = 0; j < numAttributes; ++j) {
-                    mean[j] = m_ClusterCentroids.get(i).relationalValue(1).meanOrMode(j);
+                    mean[j] = centroids.get(i).relationalValue(1).meanOrMode(j);
                 }
                 clustersToPrint.add(new DenseInstance(1D, mean));
             }
         }
         else {
-            clustersToPrint = new Instances(m_ClusterCentroids);
-            numAttributes = m_ClusterCentroids.numAttributes();
+            clustersToPrint = new Instances(centroids);
+            numAttributes = centroids.numAttributes();
         }
 
         int maxWidth = 0;
@@ -902,7 +904,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
         boolean containsNumeric = false;
         int maxV;
-        for (int i = 0; i < m_NumClusters; ++i) {
+        for (int i = 0; i < numClusters; ++i) {
             for (maxV = 0; maxV < numAttributes; ++maxV) {
                 if (clustersToPrint.attribute(maxV).name().length() > maxAttWidth) {
                     maxAttWidth = clustersToPrint.attribute(maxV).name().length();
@@ -937,7 +939,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 }
             }
         }
-        double[] auxSize = this.m_ClusterSizes;
+        double[] auxSize = this.clustersSize;
         maxV = auxSize.length;
         String strVal;
         for (int i = 0; i < maxV; ++i) {
@@ -947,11 +949,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 maxWidth = strVal.length();
             }
         }
-        if (this.m_displayStdDevs && maxAttWidth < "missing".length()) {
+        if (this.showStdDevs && maxAttWidth < "missing".length()) {
             maxAttWidth = "missing".length();
         }
         maxAttWidth += 2;
-        if (this.m_displayStdDevs && containsNumeric) {
+        if (this.showStdDevs && containsNumeric) {
             maxWidth += plusMinus.length();
         }
         if (maxAttWidth < "Attribute".length() + 2) {
@@ -965,16 +967,16 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         result.append(this.pad("Attribute", " ", maxAttWidth - "Attribute".length(), false));
         result.append(this.pad("Full Data", " ", maxWidth + 1 - "Full Data".length(), true));
 
-        for (int i = 0; i < this.m_NumClusters; ++i) {
+        for (int i = 0; i < this.numClusters; ++i) {
             clustNum = String.valueOf(i);
             result.append(this.pad(clustNum, " ", maxWidth + 1 - clustNum.length(), true));
         }
         result.append("\n");
-        String cSize = "(" + Utils.sum(this.m_ClusterSizes) + ")";
+        String cSize = "(" + Utils.sum(this.clustersSize) + ")";
         result.append(this.pad(cSize, " ", maxAttWidth + maxWidth + 1 - cSize.length(), true));
 
-        for (int i = 0; i < this.m_NumClusters; ++i) {
-            cSize = "(" + this.m_ClusterSizes[i] + ")";
+        for (int i = 0; i < this.numClusters; ++i) {
+            cSize = "(" + this.clustersSize[i] + ")";
             result.append(this.pad(cSize, " ", maxWidth + 1 - cSize.length(), true));
         }
         result.append("\n");
@@ -989,51 +991,52 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
                 result.append(" ");
             }
 
-            String meanFull = Utils.doubleToString(this.m_FullMeansOrMediansOrModes[i], maxWidth, 4).trim();
+            String meanFull = Utils.doubleToString(this.fullMeans[i], maxWidth, 4).trim();
             result.append(this.pad(meanFull, " ", maxWidth + 1 - meanFull.length(), true));
 
-            for (int j = 0; j < this.m_NumClusters; ++j) {
+            for (int j = 0; j < this.numClusters; ++j) {
                 String meanCluster = Utils.doubleToString(clustersToPrint.instance(j).value(i), maxWidth, 4).trim();
                 result.append(this.pad(meanCluster, " ", maxWidth + 1 - meanCluster.length(), true));
             }
             result.append("\n");
 
-            if (this.m_displayStdDevs) {
-                String stdDevFull = plusMinus + Utils.doubleToString(this.m_FullStdDevs[i], maxWidth, 4).trim();
+            if (this.showStdDevs) {
+                String stdDevFull = plusMinus + Utils.doubleToString(this.fullStdDevs[i], maxWidth, 4).trim();
                 result.append(this.pad(stdDevFull, " ", maxWidth + maxAttWidth + 1 - stdDevFull.length(), true));
 
-                for (int j = 0; j < this.m_NumClusters; ++j) {
-                    String stdDevCluster = plusMinus + Utils.doubleToString(this.m_ClusterStdDevs.instance(j).value(i), maxWidth, 4).trim();
+                for (int j = 0; j < this.numClusters; ++j) {
+                    String stdDevCluster = plusMinus + Utils.doubleToString(this.clusterStdDevs.instance(j).value(i), maxWidth, 4).trim();
                     result.append(this.pad(stdDevCluster, " ", maxWidth + 1 - stdDevCluster.length(), true));
                 }
                 result.append("\n\n");
             }
         }
+        return  result.toString();
     }
 
     public Instances getClusterCentroids() {
-        return this.m_ClusterCentroids;
+        return this.centroids;
     }
 
     public Instances getClusterStandardDevs() {
-        return this.m_ClusterStdDevs;
+        return this.clusterStdDevs;
     }
 
     public double getSquaredError() {
-        return this.m_FastDistanceCalc ? Double.NaN : Utils.sum(this.m_squaredErrors);
+        return this.fastDistCalc ? Double.NaN : Utils.sum(this.squaredErrors);
     }
 
     public double[] getClusterSizes() {
-        return this.m_ClusterSizes;
+        return this.clustersSize;
     }
 
     public int[] getAssignments() throws Exception {
-        if (!this.m_PreserveOrder) {
+        if (!this.preserveOrder) {
             throw new Exception("The assignments are only available when order of instances is preserved (-O)");
-        } else if (this.m_Assignments == null) {
+        } else if (this.assignments == null) {
             throw new Exception("No assignments made.");
         } else {
-            return this.m_Assignments;
+            return this.assignments;
         }
     }
 
@@ -1058,7 +1061,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             boolean converged = true;
             for (int i = this.m_start; i < this.m_end; ++i) {
                 Instance toCluster = this.m_inst.instance(i);
-                long[] instanceCanopies = MISimpleKMeans.this.m_speedUpDistanceCompWithCanopies ? MISimpleKMeans.this.m_dataPointCanopyAssignments.get(i) : null;
+                long[] instanceCanopies = MISimpleKMeans.this.useCanopi ? MISimpleKMeans.this.dataPointCanopyAssignments.get(i) : null;
                 int newC = this.clusterInstance(toCluster, instanceCanopies);
                 if (newC != this.m_clusterAssignments[i]) {
                     converged = false;
@@ -1071,17 +1074,17 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         int clusterInstance(Instance inst, long[] instanceCanopies) {
             double minDist = 2.147483647E9D;
             int bestCluster = 0;
-            for (int i = 0; i < MISimpleKMeans.this.m_NumClusters; ++i) {
-                if (MISimpleKMeans.this.m_speedUpDistanceCompWithCanopies && instanceCanopies != null && instanceCanopies.length > 0) {
+            for (int i = 0; i < MISimpleKMeans.this.numClusters; ++i) {
+                if (MISimpleKMeans.this.useCanopi && instanceCanopies != null && instanceCanopies.length > 0) {
                     try {
-                        if (!Canopy.nonEmptyCanopySetIntersection(MISimpleKMeans.this.m_centroidCanopyAssignments.get(i), instanceCanopies)) {
+                        if (!Canopy.nonEmptyCanopySetIntersection(MISimpleKMeans.this.centroidCanopyAssignments.get(i), instanceCanopies)) {
                             continue;
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-                double dist = MISimpleKMeans.this.m_DistanceFunction.distance(inst, MISimpleKMeans.this.m_ClusterCentroids.instance(i), minDist);
+                double dist = MISimpleKMeans.this.distFunction.distance(inst, MISimpleKMeans.this.centroids.instance(i), minDist);
                 if (dist < minDist) {
                     minDist = dist;
                     bestCluster = i;
