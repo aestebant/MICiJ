@@ -272,15 +272,11 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
     private double computeRandIndex() {
         double rand = 0;
-        double divisor = 0;
         for (int i = 0; i < numClusters; ++i) {
-            for (int j = 0; j < numClasses; ++j) {
-                if (i == j)
-                    rand += confusion[i][j];
-                divisor += confusion[i][j];
-            }
+            if (classToCluster[i] > -1)
+                rand += confusion[i][classToCluster[i]];
         }
-        return rand / divisor;
+        return rand / instances.numInstances();
     }
 
     private double computePurity() {
