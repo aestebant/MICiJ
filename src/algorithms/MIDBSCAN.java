@@ -8,8 +8,6 @@ import weka.core.*;
 import weka.core.Capabilities.Capability;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
-import weka.filters.Filter;
-import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 import java.text.DecimalFormat;
 import java.util.Enumeration;
@@ -18,15 +16,15 @@ import java.util.List;
 import java.util.Vector;
 
 public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
-    static final long serialVersionUID = -1666498248451219728L;
     private double epsilon = 0.9;
     private int minPoints = 6;
-    private int numberOfGeneratedClusters;
-    private DistanceFunction m_DistanceFunction = new HausdorffDistance();
+    private int numGeneratedClusters;
+    private int numNoises;
+    private DistanceFunction distFunction = new HausdorffDistance();
     private Database database;
     private int clusterID;
-    private int processed_InstanceID;
     private double elapsedTime;
+    private boolean printClusterAssignments;
 
     @Override
     public Capabilities getCapabilities() {
@@ -43,119 +41,128 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
     @Override
     public void buildClusterer(Instances instances) throws Exception {
         this.getCapabilities().testWithFail(instances);
-        long time_1 = System.currentTimeMillis();
-        this.processed_InstanceID = 0;
-        this.numberOfGeneratedClusters = 0;
-        this.clusterID = 0;
-        ReplaceMissingValues replaceMissingValues_Filter = new ReplaceMissingValues();
-        replaceMissingValues_Filter.setInputFormat(instances);
-        Instances filteredInstances = Filter.useFilter(instances, replaceMissingValues_Filter);
-        this.database = new Database(this.getDistanceFunction(), filteredInstances);
+        long startTime = System.currentTimeMillis();
+        numGeneratedClusters = 0;
+        numNoises = 0;
+        clusterID = 0;
+        database = new Database(distFunction, instances);
 
-        DataObject dataObject;
-        for (int i = 0; i < this.database.getInstances().numInstances(); ++i) {
-            dataObject = new DataObject(this.database.getInstances().instance(i), Integer.toString(i), this.database);
-            this.database.insert(dataObject);
+        for (int i = 0; i < database.getInstances().numInstances(); ++i) {
+            Instance instance = database.getInstances().instance(i);
+            DataObject dataObject = new DataObject(instance, instance.stringValue(0));
+            database.insert(dataObject);
         }
 
-        Iterator iterator = this.database.dataObjectIterator();
-
-        while (iterator.hasNext()) {
-            dataObject = (DataObject) iterator.next();
+        for (Iterator i = database.dataObjectIterator(); i.hasNext(); ) {
+            DataObject dataObject = (DataObject) i.next();
             //System.out.println("ANALIZANDO BOLSA " + dataObject.getKey());
-            if (dataObject.getClusterLabel() == -1 && this.expandCluster(dataObject)) {
+            if (dataObject.getClusterLabel() == DataObject.UNCLASSIFIED && this.expandCluster(dataObject)) {
                 //System.out.println("HA ENTRADO EN EL CLÚSTER " + dataObject.getClusterLabel());
-                ++this.clusterID;
-                ++this.numberOfGeneratedClusters;
+                clusterID++;
+                numGeneratedClusters++;
             }
         }
 
-        long time_2 = System.currentTimeMillis();
-        this.elapsedTime = (double) (time_2 - time_1) / 1000.0D;
+        long finishTime = System.currentTimeMillis();
+        elapsedTime = (double) (finishTime - startTime) / 1000.0D;
     }
 
     private boolean expandCluster(DataObject dataObject) {
-        List<DataObject> seedList = this.database.epsilonRangeQuery(this.getEpsilon(), dataObject);
+        List<DataObject> seedList = database.epsilonRangeQuery(epsilon, dataObject);
         //System.out.println("Elementos a distancia epsilon: " + seedList.size());
-        if (seedList.size() < this.getMinPoints()) {
-            dataObject.setClusterLabel(-2147483648);
+        if (seedList.size() < minPoints) {
+            dataObject.setClusterLabel(DataObject.NOISE);
+            numNoises++;
             return false;
         } else {
-            for (int j = 0; j < seedList.size(); ++j) {
-                DataObject seedListDataObject = seedList.get(j);
+            for (int i = 0; i < seedList.size(); ++i) {
+                DataObject seedListDataObject = seedList.get(i);
                 if (seedListDataObject.getKey().equals(dataObject.getKey())) {
-                    seedList.remove(j);
-                    --j;
+                    seedList.remove(i);
+                    --i;
                 }
                 seedListDataObject.setClusterLabel(this.clusterID);
             }
 
-            for (int j = 0; j < seedList.size(); ++j) {
-                DataObject seedListDataObject = seedList.get(j);
-                List<DataObject> seedListDataObject_Neighbourhood = this.database.epsilonRangeQuery(this.getEpsilon(), seedListDataObject);
+            for (int i = 0; i < seedList.size(); ++i) {
+                DataObject seedListDataObject = seedList.get(i);
+                List<DataObject> seedListDataObject_Neighbourhood = database.epsilonRangeQuery(epsilon, seedListDataObject);
                 //System.out.println("A SU VEZ, " + seedListDataObject.getKey() + " TIENE DE VECINOS " + seedListDataObject_Neighbourhood.size());
-                if (seedListDataObject_Neighbourhood.size() >= this.getMinPoints()) {
+                if (seedListDataObject_Neighbourhood.size() >= minPoints) {
                     for (DataObject p : seedListDataObject_Neighbourhood) {
-                        if (p.getClusterLabel() == -1 || p.getClusterLabel() == -2147483648) {
-                            if (p.getClusterLabel() == -1) {
+                        if (p.getClusterLabel() == DataObject.UNCLASSIFIED || p.getClusterLabel() == DataObject.NOISE) {
+                            if (p.getClusterLabel() == DataObject.UNCLASSIFIED) {
                                 seedList.add(p);
                             }
                             p.setClusterLabel(this.clusterID);
                         }
                     }
                 }
-                seedList.remove(j);
-                --j;
+                seedList.remove(i);
+                --i;
             }
             return true;
         }
     }
 
+    @Override
     public int clusterInstance(Instance instance) throws Exception {
-        if (this.processed_InstanceID >= this.database.size()) {
-            this.processed_InstanceID = 0;
+        return database.getDataObject(instance.stringValue(0)).getClusterLabel();
+    }
+
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        result.append("Clustered DataObjects: ").append(database.size()).append("\n");
+        result.append("Number of instance attributes: ").append(database.getInstances().get(0).relationalValue(1).numAttributes()).append("\n");
+        result.append("Epsilon: ").append(epsilon).append("; minPoints: ").append(minPoints).append("\n");
+        result.append("Distance-type: ").append(this.getDistanceFunction()).append("\n");
+        result.append("Number of generated clusters: ").append(numGeneratedClusters).append("\n");
+        result.append("Number of noisily instances: ").append(numNoises).append("\n");
+        DecimalFormat decimalFormat = new DecimalFormat(".##");
+        result.append("Elapsed time: ").append(decimalFormat.format(elapsedTime)).append("\n");
+
+        if (printClusterAssignments) {
+            result.append("Cluster assigntments:\n");
+            for (int i = 0; i < database.getInstances().numInstances(); ++i) {
+                Instance instance = database.getInstances().instance(i);
+                DataObject dataObject = database.getDataObject(instance.stringValue(0));
+                result.append(dataObject.getKey())
+                        .append("  -->  ").append(dataObject.getClusterLabel() == DataObject.NOISE ? "NOISE\n" : dataObject.getClusterLabel())
+                        .append(" (").append(dataObject.toString()).append(")\n");
+            }
         }
 
-        int cnum = this.database.getDataObject(Integer.toString(this.processed_InstanceID++)).getClusterLabel();
-        if (cnum == -2147483648) {
-            throw new Exception();
-        } else {
-            return cnum;
-        }
+        return result.toString() + "\n";
     }
 
     @Override
-    public int numberOfClusters() {
-        return this.numberOfGeneratedClusters;
-    }
-
     public Enumeration<Option> listOptions() {
         Vector<Option> vector = new Vector<>();
         vector.addElement(new Option("\tepsilon (default = 0.9)", "E", 1, "-E <double>"));
         vector.addElement(new Option("\tminPoints (default = 6)", "M", 1, "-M <int>"));
         vector.add(new Option("\tDistance function to use.\n\t(default: weka.core.EuclideanDistance)", "A", 1, "-A <classname and options>"));
+        vector.add(new Option("\tOutput clusters assignments", "output-clusters", 0, "-output-clusters"));
         return vector.elements();
     }
 
     @Override
     public void setOptions(String[] options) throws Exception {
-        String optionString = Utils.getOption('E', options);
-        if (optionString.length() != 0) {
-            this.setEpsilon(Double.parseDouble(optionString));
+        String epsilon = Utils.getOption('E', options);
+        if (epsilon.length() != 0) {
+            this.setEpsilon(Double.parseDouble(epsilon));
         }
 
-        optionString = Utils.getOption('M', options);
-        if (optionString.length() != 0) {
-            this.setMinPoints(Integer.parseInt(optionString));
+        String minPoints = Utils.getOption('M', options);
+        if (minPoints.length() != 0) {
+            this.setMinPoints(Integer.parseInt(minPoints));
         }
 
-        optionString = Utils.getOption('A', options);
-        if (optionString.length() != 0) {
-            String[] distSpec = Utils.splitOptions(optionString);
+        String distance = Utils.getOption('A', options);
+        if (distance.length() != 0) {
+            String[] distSpec = Utils.splitOptions(distance);
             if (distSpec.length == 0) {
                 throw new Exception("Invalid DistanceFunction specification string.");
             }
-
             String className = distSpec[0];
             distSpec[0] = "";
             this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distSpec));
@@ -163,16 +170,17 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
             this.setDistanceFunction(new HausdorffDistance());
         }
 
+        printClusterAssignments = Utils.getFlag("output-clusters", options);
     }
 
     public String[] getOptions() {
         Vector<String> result = new Vector<>();
         result.add("-E");
-        result.add("" + this.getEpsilon());
+        result.add(Double.toString(epsilon));
         result.add("-M");
-        result.add("" + this.getMinPoints());
+        result.add(Integer.toString(minPoints));
         result.add("-A");
-        result.add((this.m_DistanceFunction.getClass().getName() + " " + Utils.joinOptions(this.m_DistanceFunction.getOptions())).trim());
+        result.add((distFunction.getClass().getName() + " " + Utils.joinOptions(distFunction.getOptions())).trim());
         return result.toArray(new String[0]);
     }
 
@@ -184,24 +192,21 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         this.epsilon = epsilon;
     }
 
-    public double getEpsilon() {
-        return this.epsilon;
+    @Override
+    public int numberOfClusters() {
+        return this.numGeneratedClusters;
     }
 
-    public int getMinPoints() {
-        return this.minPoints;
+    public DistanceFunction getDistanceFunction() {
+        return this.distFunction;
+    }
+
+    public void setDistanceFunction(DistanceFunction df) {
+        this.distFunction = df;
     }
 
     public String distanceFunctionTipText() {
         return "The distance function to use for finding neighbours (default: weka.core.EuclideanDistance). ";
-    }
-
-    public DistanceFunction getDistanceFunction() {
-        return this.m_DistanceFunction;
-    }
-
-    public void setDistanceFunction(DistanceFunction df) {
-        this.m_DistanceFunction = df;
     }
 
     public String epsilonTipText() {
@@ -226,25 +231,6 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         result.setValue(Field.PAGES, "226-231");
         result.setValue(Field.PUBLISHER, "AAAI Press");
         return result;
-    }
-
-    public String toString() {
-        StringBuilder stringBuffer = new StringBuilder();
-        stringBuffer.append("DBSCAN clustering results\n========================================================================================\n\n");
-        stringBuffer.append("Clustered DataObjects: ").append(this.database.size()).append("\n");
-        stringBuffer.append("Number of instance attributes: ").append(this.database.getInstances().get(0).relationalValue(1).numAttributes()).append("\n");
-        stringBuffer.append("Epsilon: ").append(this.getEpsilon()).append("; minPoints: ").append(this.getMinPoints()).append("\n");
-        stringBuffer.append("Distance-type: ").append(this.getDistanceFunction()).append("\n");
-        stringBuffer.append("Number of generated clusters: ").append(this.numberOfGeneratedClusters).append("\n");
-        DecimalFormat decimalFormat = new DecimalFormat(".##");
-        stringBuffer.append("Elapsed time: ").append(decimalFormat.format(this.elapsedTime)).append("\n\n");
-
-        for (int i = 0; i < this.database.size(); ++i) {
-            DataObject dataObject = this.database.getDataObject(Integer.toString(i));
-            stringBuffer.append("(").append(Utils.doubleToString(Double.parseDouble(dataObject.getKey()), Integer.toString(this.database.size()).length(), 0)).append(".) ").append(Utils.padRight(dataObject.toString(), 69)).append("  -->  ").append(dataObject.getClusterLabel() == -2147483648 ? "NOISE\n" : dataObject.getClusterLabel() + "\n");
-        }
-
-        return stringBuffer.toString() + "\n";
     }
 
     public String getRevision() {

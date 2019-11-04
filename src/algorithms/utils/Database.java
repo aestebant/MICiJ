@@ -8,55 +8,44 @@ import weka.core.RevisionHandler;
 import weka.core.RevisionUtils;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Database implements Serializable, RevisionHandler {
-    private static final long serialVersionUID = 787245523118665778L;
-    private TreeMap treeMap;
+    private TreeMap<String, DataObject> treeMap;
     private Instances instances;
     private DistanceFunction m_DistanceFunction;
 
     public Database(DistanceFunction distFunc, Instances instances) {
         this.instances = instances;
-        this.treeMap = new TreeMap();
+        this.treeMap = new TreeMap<>();
         this.m_DistanceFunction = distFunc;
         this.m_DistanceFunction.setInstances(instances);
     }
 
     public DataObject getDataObject(String key) {
-        return (DataObject)this.treeMap.get(key);
+        return this.treeMap.get(key);
     }
 
     public List<DataObject> epsilonRangeQuery(double epsilon, DataObject queryDataObject) {
         List<DataObject> epsilonRange_List = new ArrayList<>();
-        Iterator iterator = this.dataObjectIterator();
-
-        while(iterator.hasNext()) {
-            DataObject dataObject = (DataObject)iterator.next();
+        for (Iterator i = dataObjectIterator(); i.hasNext(); ) {
+            DataObject dataObject = (DataObject) i.next();
             double distance = this.m_DistanceFunction.distance(queryDataObject.getInstance(), dataObject.getInstance());
             if (distance < epsilon) {
                 epsilonRange_List.add(dataObject);
             }
         }
-
         return epsilonRange_List;
     }
 
-    public List k_nextNeighbourQuery(int k, double epsilon, DataObject dataObject) {
-        Iterator iterator = this.dataObjectIterator();
-        List return_List = new ArrayList<>();
-        List<PriorityQueueElement> nextNeighbours_List = new ArrayList<>();
-        List<EpsilonRange_ListElement> epsilonRange_List = new ArrayList<>();
+    private List k_nextNeighbourQuery(int k, double epsilon, DataObject dataObject) {
+        List<EpsilonRange_ListElement> epsilonRange = new ArrayList<>();
         PriorityQueue priorityQueue = new PriorityQueue();
-
-        while(iterator.hasNext()) {
-            DataObject next_dataObject = (DataObject)iterator.next();
+        for(Iterator i = this.dataObjectIterator(); i.hasNext(); ) {
+            DataObject next_dataObject = (DataObject)i.next();
             double dist = this.m_DistanceFunction.distance(dataObject.getInstance(), next_dataObject.getInstance());
             if (dist <= epsilon) {
-                epsilonRange_List.add(new EpsilonRange_ListElement(dist, next_dataObject));
+                epsilonRange.add(new EpsilonRange_ListElement(dist, next_dataObject));
             }
 
             if (priorityQueue.size() < k) {
@@ -67,19 +56,21 @@ public class Database implements Serializable, RevisionHandler {
             }
         }
 
+        List<PriorityQueueElement> nextNeighbours = new ArrayList<>();
         while(priorityQueue.hasNext()) {
-            nextNeighbours_List.add(0, priorityQueue.next());
+            nextNeighbours.add(0, priorityQueue.next());
         }
 
-        return_List.add(nextNeighbours_List);
-        return_List.add(epsilonRange_List);
-        return return_List;
+        List result = new ArrayList<>();
+        result.add(nextNeighbours);
+        result.add(epsilonRange);
+        return result;
     }
 
     public List coreDistance(int minPoints, double epsilon, DataObject dataObject) {
         List list = this.k_nextNeighbourQuery(minPoints, epsilon, dataObject);
         if (((List)list.get(1)).size() < minPoints) {
-            list.add(2.147483647E9D);
+            list.add(DataObject.UNDEFINED);
             return list;
         } else {
             List nextNeighbours_List = (List)list.get(0);
@@ -89,7 +80,7 @@ public class Database implements Serializable, RevisionHandler {
                 list.add(priorityQueueElement.getPriority());
                 return list;
             } else {
-                list.add(2.147483647E9D);
+                list.add(DataObject.UNDEFINED);
                 return list;
             }
         }

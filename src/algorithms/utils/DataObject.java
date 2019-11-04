@@ -10,23 +10,20 @@ public class DataObject implements Serializable, RevisionHandler {
     public static final int UNCLASSIFIED = -1;
     public static final int NOISE = -2147483648;
     public static final double UNDEFINED = 2.147483647E9D;
-    private static final long serialVersionUID = -4408119914898291075L;
     private Instance instance;
     private String key;
     private int clusterID;
     private boolean processed;
     private double c_dist;
     private double r_dist;
-    private Database database;
 
-    public DataObject(Instance originalInstance, String key, Database database) {
-        this.database = database;
+    public DataObject(Instance originalInstance, String key) {
         this.key = key;
         this.instance = originalInstance;
-        this.clusterID = -1;
+        this.clusterID = UNCLASSIFIED;
         this.processed = false;
-        this.c_dist = 2.147483647E9D;
-        this.r_dist = 2.147483647E9D;
+        this.c_dist = UNDEFINED;
+        this.r_dist = UNDEFINED;
     }
 
     public Instance getInstance() {

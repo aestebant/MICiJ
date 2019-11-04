@@ -57,7 +57,7 @@ public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHa
         this.database = new Database(this.getDistanceFunction(), filteredInstances);
 
         for (int i = 0; i < this.database.getInstances().numInstances(); ++i) {
-            DataObject dataObject = new DataObject(this.database.getInstances().instance(i), Integer.toString(i), this.database);
+            DataObject dataObject = new DataObject(this.database.getInstances().instance(i), Integer.toString(i));
             this.database.insert(dataObject);
         }
 
