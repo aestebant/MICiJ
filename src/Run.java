@@ -38,13 +38,13 @@ public class Run {
         String[] clustering = {
                 "MIDBSCAN",
                 "MISimpleKMeans",
-//                "BAMIC",
+                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
         options.put("MIDBSCAN", " -E 0.5 -M 2 -output-clusters -hausdorff-type average");
-        options.put("MISimpleKMeans", "-num-slots 2 -V -hausdorff-type average");
-        options.put("BAMIC", "-num-slots 2 -V");
+        options.put("MISimpleKMeans", "-S 155 -num-slots 3 -V -hausdorff-type average");
+        options.put("BAMIC", "-S 155 -num-slots 3 -V");
         options.put("MIOPTICS", "");
 
         for (String d : datasets) {
@@ -65,12 +65,12 @@ public class Run {
                         e.printStackTrace();
                     }
 
-                    try {
+                    /*try {
                         clusterer.buildClusterer(ProcessDataset.readArff("datasets/" + d + z + ".arff"));
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }
-                    System.out.println(clusterer.toString());
+                    }*/
+
 
                     ClusterEvaluation evaluation = new ClusterEvaluation();
                     String evalOptions = " -c last";
@@ -81,6 +81,7 @@ public class Run {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    System.out.println(clusterer.toString());
                     System.out.println(evaluation);
                 }
             }

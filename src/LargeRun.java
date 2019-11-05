@@ -92,20 +92,20 @@ public class LargeRun {
 
     private static void setExperiments() {
         datasets = new String[]{
-//                "component_relational",
+                "component_relational",
                 "eastwest_relational",
-//                "elephant_relational",
-//                "fox_relational",
-//                "function_relational",
-//                "musk1_relational",
-//                "musk2_relational",
-//                "mutagenesis3_atoms_relational",
-//                "mutagenesis3_bonds_relational",
-//                "mutagenesis3_chains_relational",
-//                "process_relational",
-//                "suramin_relational",
-//                "tiger_relational",
-//                "trx_relational",
+                "elephant_relational",
+                "fox_relational",
+                "function_relational",
+                "musk1_relational",
+                "musk2_relational",
+                "mutagenesis3_atoms_relational",
+                "mutagenesis3_bonds_relational",
+                "mutagenesis3_chains_relational",
+                "process_relational",
+                "suramin_relational",
+                "tiger_relational",
+                "trx_relational",
                 "westeast_relational"
         };
 
@@ -122,14 +122,14 @@ public class LargeRun {
         };
 
         List<String> kMeansConfig = new ArrayList<>();
-        for (int k = 2; k <= 6; ++k) {
+        for (int k = 2; k <= 4; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
                 kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
-        for (double eps = 0.6; eps <= 1.6; eps += 0.2) {
-            for (int minPts = 2; minPts <= 6; ++minPts) {
+        for (double eps = 0.6; eps <= 1.5; eps += 0.3) {
+            for (int minPts = 2; minPts <= 4; ++minPts) {
                 for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
                     dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausdorff);
                 }
