@@ -12,7 +12,15 @@ public class HausdorffDistance implements DistanceFunction {
     private static final int AVE = 3;
 
     private int type = AVE;
-    private DistanceFunction df;
+    private final DistanceFunction df;
+
+    public HausdorffDistance() {
+        df = new EuclideanDistance();
+    }
+
+    public HausdorffDistance(Instances instances) {
+        df = new EuclideanDistance();
+    }
 
     @Override
     public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
@@ -20,9 +28,6 @@ public class HausdorffDistance implements DistanceFunction {
         Instances i2 = preprocess(bag2);
 
         assert i1.numAttributes() == i2.numAttributes();
-
-        df = new EuclideanDistance();
-        df.setInstances(i1);
 
         double distance = 0D;
         switch (type) {
@@ -40,6 +45,7 @@ public class HausdorffDistance implements DistanceFunction {
             performanceStats.incrCoordCount();
 
         //System.out.println("Hausdorff distance between " + bag1.value(0) + " and " + bag2.value(0) + "-> " + distance);
+
         return distance;
     }
 
@@ -193,6 +199,7 @@ public class HausdorffDistance implements DistanceFunction {
 
     @Override
     public void setInstances(Instances instances) {
+        df.setInstances(instances.get(0).relationalValue(1));
     }
 
     @Override

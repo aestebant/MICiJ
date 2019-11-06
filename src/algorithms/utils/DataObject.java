@@ -8,8 +8,8 @@ import java.io.Serializable;
 
 public class DataObject implements Serializable, RevisionHandler {
     public static final int UNCLASSIFIED = -1;
-    public static final int NOISE = -2147483648;
-    public static final double UNDEFINED = 2.147483647E9D;
+    public static final int NOISE = -2;
+    public static final double UNDEFINED = -3;
     private Instance instance;
     private String key;
     private int clusterID;

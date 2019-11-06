@@ -5,9 +5,8 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class BAMIC extends MISimpleKMeans {
 
@@ -34,34 +33,17 @@ public class BAMIC extends MISimpleKMeans {
     }
 
     @Override
-    protected Instance moveCentroid(int clusterIdx, Instances members, Boolean addToCentroidInstances) {
-        int numInstAttributes = members.get(0).relationalValue(1).numAttributes();
-
-        Instances aux = new Instances(members.get(0).relationalValue(1));
-        for (Instance member : members) {
-            aux.addAll(member.relationalValue(1));
-        }
-
-        double[] means = new double[numInstAttributes];
-        for (int i = 0; i < numInstAttributes; ++i) {
-            means[i] = aux.meanOrMode(i);
-        }
-
-        Instance centroid = new DenseInstance(1D, means);
-        aux.add(centroid);
+    protected Instance computeCentroid(Instances members) {
+        Instance centroid = super.computeCentroid(members);
 
         int idxMin = 0;
         double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < members.numInstances(); ++i) {
-            double distance = distFunction.distance(members.get(i), aux.lastInstance());
+            double distance = distFunction.distance(members.get(i), centroid);
             if (distance < minDistance) {
                 minDistance = distance;
                 idxMin = i;
             }
-        }
-
-        if (addToCentroidInstances) {
-            this.centroids.add(members.get(idxMin));
         }
 
         return members.get(idxMin);

@@ -1,7 +1,9 @@
+import algorithms.MyClusterer;
 import evaluators.ClusterEvaluation;
 import utils.LoadByName;
 import utils.ProcessDataset;
 import weka.clusterers.Clusterer;
+import weka.core.Instances;
 import weka.core.Utils;
 
 import java.io.File;
@@ -17,7 +19,6 @@ public class LargeRun {
     private static String[] standardization;
     private static String[] clustering;
     private static Map<String, List<String>> clusterConfig;
-    private static String evaluationConfig = "-c last";
 
     private static int nThreads = 1;
 
@@ -35,6 +36,8 @@ public class LargeRun {
 
         setExperiments();
         setSaveResults();
+
+        String evaluationConfig = "-c last  -num-threads " + nThreads;
 
         int nConfigs = 0;
         for (Map.Entry<String, List<String>> e: clusterConfig.entrySet()) {
@@ -58,26 +61,26 @@ public class LargeRun {
                         System.out.println(control);
 
                         Clusterer clusterer = LoadByName.clusterer("algorithms." + c);
-
-                        ClusterEvaluation evaluation = new ClusterEvaluation();
+                        Instances dataset = ProcessDataset.readArff("datasets/" + d + z + ".arff");
+                        ClusterEvaluation eval = new ClusterEvaluation();
                         try {
-                            evaluation.setOptions(Utils.splitOptions(evaluationConfig));
-                            evaluation.setClusterer(clusterer, Utils.splitOptions(config));
-                            evaluation.evaluateClusterer(ProcessDataset.readArff("datasets/" + d + z + ".arff"));
+                            eval.setOptions(Utils.splitOptions(evaluationConfig));
+                            eval.setClusterer(clusterer, Utils.splitOptions(config));
+                            eval.evaluateClusterer(dataset);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
 
                         try {
                             reportFileWriter.flush();
-                            reportFileWriter.write(c + "," + config + "," + d + "," + z + "," + evaluation.getNumClusters()
-                                    + "," + evaluation.getUnclusteredInstances() + "," + evaluation.getSilhouette() + ","
-                                    + evaluation.getSdbw() + "," + evaluation.getPurity() + "," + evaluation.getRand() + "\n"
+                            reportFileWriter.write(c + "," + config + "," + ((MyClusterer)clusterer).getDistanceFunction() + "," + d + "," + z + "," + eval.getActualNumClusters()
+                                    + "," + dataset.numInstances() + "," + (dataset.numInstances()-eval.getUnclusteredInstances()) + "," + eval.getUnclusteredInstances() + "," + eval.getSilhouette() + ","
+                                    + eval.getSdbw() + "," + eval.getPurity() + "," + eval.getRand() + "," + eval.getConfussion() + "," + ((MyClusterer)clusterer).getElapsedTime() + "\n"
                             );
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        saveFullReport(clusterer, evaluation, currentIteration);
+                        saveFullReport(clusterer, eval, currentIteration);
                     }
                 }
             }
@@ -128,10 +131,10 @@ public class LargeRun {
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
-        for (double eps = 0.6; eps <= 1.5; eps += 0.3) {
+        for (double eps : new double[]{0.6, 0.9, 1.2, 1.5}) {
             for (int minPts = 2; minPts <= 4; ++minPts) {
                 for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
-                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausdorff);
+                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -num-threads " + nThreads + " -hausdorff-type " + hausdorff);
                 }
             }
         }
@@ -160,7 +163,7 @@ public class LargeRun {
         try {
             reportFileWriter = new FileWriter(reportFile);
             reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Dataset,Standardization,#Clusters,#Unclustered,Silhouette index, S_Dbw index, Purity, Rand index\n");
+            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,Purity,Rand index,#Confusion Matrix (a cluster by each |),#Time of Clustering\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -18,6 +18,7 @@ import java.util.Vector;
 public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
     private double epsilon = 0.9;
     private int minPoints = 6;
+    private int nThreads = 1;
     private int numGeneratedClusters;
     private int numNoises;
     private DistanceFunction distFunction = new HausdorffDistance();
@@ -45,7 +46,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         numGeneratedClusters = 0;
         numNoises = 0;
         clusterID = 0;
-        database = new Database(distFunction, instances);
+        database = new Database(distFunction, instances, nThreads);
 
         for (int i = 0; i < database.getInstances().numInstances(); ++i) {
             Instance instance = database.getInstances().instance(i);
@@ -54,10 +55,10 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         }
 
         for (Iterator i = database.dataObjectIterator(); i.hasNext(); ) {
-            DataObject dataObject = (DataObject) i.next();
-            //System.out.println("ANALIZANDO BOLSA " + dataObject.getKey());
-            if (dataObject.getClusterLabel() == DataObject.UNCLASSIFIED && this.expandCluster(dataObject)) {
-                //System.out.println("HA ENTRADO EN EL CLÚSTER " + dataObject.getClusterLabel());
+            DataObject bag = (DataObject) i.next();
+            //System.out.println("ANALIZANDO BOLSA " + bag.getKey());
+            if (bag.getClusterLabel() == DataObject.UNCLASSIFIED && this.expandCluster(bag)) {
+                //System.out.println("HA ENTRADO EN EL CLÚSTER " + bag.getClusterLabel());
                 clusterID++;
                 numGeneratedClusters++;
             }
@@ -68,37 +69,36 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
     }
 
     private boolean expandCluster(DataObject dataObject) {
-        List<DataObject> seedList = database.epsilonRangeQuery(epsilon, dataObject);
-        //System.out.println("Elementos a distancia epsilon: " + seedList.size());
-        if (seedList.size() < minPoints) {
+        List<DataObject> nEps = database.epsilonRangeQuery(epsilon, dataObject);
+        //System.out.println("Elementos a distancia epsilon: " + nEps.size());
+        if (nEps.size() < minPoints) {
             dataObject.setClusterLabel(DataObject.NOISE);
             numNoises++;
             return false;
         } else {
-            for (int i = 0; i < seedList.size(); ++i) {
-                DataObject seedListDataObject = seedList.get(i);
-                if (seedListDataObject.getKey().equals(dataObject.getKey())) {
-                    seedList.remove(i);
+            for (int i = 0; i < nEps.size(); ++i) {
+                DataObject neighbor = nEps.get(i);
+                if (neighbor.getKey().equals(dataObject.getKey())) {
+                    nEps.remove(i);
                     --i;
                 }
-                seedListDataObject.setClusterLabel(this.clusterID);
+                neighbor.setClusterLabel(this.clusterID);
             }
-
-            for (int i = 0; i < seedList.size(); ++i) {
-                DataObject seedListDataObject = seedList.get(i);
-                List<DataObject> seedListDataObject_Neighbourhood = database.epsilonRangeQuery(epsilon, seedListDataObject);
-                //System.out.println("A SU VEZ, " + seedListDataObject.getKey() + " TIENE DE VECINOS " + seedListDataObject_Neighbourhood.size());
-                if (seedListDataObject_Neighbourhood.size() >= minPoints) {
-                    for (DataObject p : seedListDataObject_Neighbourhood) {
+            for (int i = 0; i < nEps.size(); ++i) {
+                DataObject neighbor = nEps.get(i);
+                List<DataObject> nEpsOfNeighbor = database.epsilonRangeQuery(epsilon, neighbor);
+                //System.out.println("A SU VEZ, " + neighbor.getKey() + " TIENE DE VECINOS " + nEpsOfNeighbor.size());
+                if (nEpsOfNeighbor.size() >= minPoints) {
+                    for (DataObject p : nEpsOfNeighbor) {
                         if (p.getClusterLabel() == DataObject.UNCLASSIFIED || p.getClusterLabel() == DataObject.NOISE) {
                             if (p.getClusterLabel() == DataObject.UNCLASSIFIED) {
-                                seedList.add(p);
+                                nEps.add(p);
                             }
                             p.setClusterLabel(this.clusterID);
                         }
                     }
                 }
-                seedList.remove(i);
+                nEps.remove(i);
                 --i;
             }
             return true;
@@ -142,6 +142,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         vector.addElement(new Option("\tminPoints (default = 6)", "M", 1, "-M <int>"));
         vector.add(new Option("\tDistance function to use.\n\t(default: HausdorffDistance)", "A", 1, "-A <classname and options>"));
         vector.add(new Option("\tOutput clusters assignments", "output-clusters", 0, "-output-clusters"));
+        vector.add(new Option("\tNumber of threads to run in parallel", "num-threads", 1, "-num-threads <int>"));
         return vector.elements();
     }
 
@@ -170,6 +171,11 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
             this.setDistanceFunction(new HausdorffDistance(), options);
         }
 
+        String nThreads = Utils.getOption("num-threads", options);
+        if (nThreads.length() != 0) {
+            this.nThreads = Integer.parseInt(nThreads);
+        }
+
         printClusterAssignments = Utils.getFlag("output-clusters", options);
     }
 
@@ -195,6 +201,11 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
     @Override
     public int numberOfClusters() {
         return this.numGeneratedClusters;
+    }
+
+    @Override
+    public double getElapsedTime() {
+        return elapsedTime;
     }
 
     public DistanceFunction getDistanceFunction() {

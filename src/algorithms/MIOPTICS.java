@@ -2,7 +2,7 @@ package algorithms;
 
 import algorithms.utils.DataObject;
 import algorithms.utils.Database;
-import algorithms.utils.EpsilonRange_ListElement;
+import algorithms.utils.NEpsElement;
 import algorithms.utils.opticgui.OPTICS_Visualizer;
 import algorithms.utils.opticgui.SERObject;
 import distances.HausdorffDistance;
@@ -54,7 +54,7 @@ public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHa
         ReplaceMissingValues replaceMissingValues_Filter = new ReplaceMissingValues();
         replaceMissingValues_Filter.setInputFormat(instances);
         Instances filteredInstances = Filter.useFilter(instances, replaceMissingValues_Filter);
-        this.database = new Database(this.getDistanceFunction(), filteredInstances);
+        this.database = new Database(this.getDistanceFunction(), filteredInstances, 1);
 
         for (int i = 0; i < this.database.getInstances().numInstances(); ++i) {
             DataObject dataObject = new DataObject(this.database.getInstances().instance(i), Integer.toString(i));
@@ -144,7 +144,7 @@ public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHa
         double new_r_dist;
 
         for (Object o : epsilonRange_list) {
-            EpsilonRange_ListElement listElement = (EpsilonRange_ListElement) o;
+            NEpsElement listElement = (NEpsElement) o;
             DataObject neighbourhood_object = listElement.getDataObject();
             if (!neighbourhood_object.isProcessed()) {
                 new_r_dist = Math.max(coreDistance, listElement.getDistance());
@@ -258,6 +258,11 @@ public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHa
 
     public DistanceFunction getDistanceFunction() {
         return this.m_DistanceFunction;
+    }
+
+    @Override
+    public double getElapsedTime() {
+        return 0;
     }
 
     public void setDistanceFunction(DistanceFunction df) throws Exception {

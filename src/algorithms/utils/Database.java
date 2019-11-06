@@ -2,24 +2,24 @@ package algorithms.utils;
 
 import weka.clusterers.forOPTICSAndDBScan.Utils.PriorityQueue;
 import weka.clusterers.forOPTICSAndDBScan.Utils.PriorityQueueElement;
-import weka.core.DistanceFunction;
-import weka.core.Instances;
-import weka.core.RevisionHandler;
-import weka.core.RevisionUtils;
+import weka.core.*;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Database implements Serializable, RevisionHandler {
     private TreeMap<String, DataObject> treeMap;
     private Instances instances;
-    private DistanceFunction m_DistanceFunction;
+    private final DistanceFunction df;
+    private int nThreads;
 
-    public Database(DistanceFunction distFunc, Instances instances) {
+    public Database(DistanceFunction distFunc, Instances instances, int nThreads) {
         this.instances = instances;
         this.treeMap = new TreeMap<>();
-        this.m_DistanceFunction = distFunc;
-        this.m_DistanceFunction.setInstances(instances);
+        df = distFunc;
+        df.setInstances(instances);
+        this.nThreads = nThreads;
     }
 
     public DataObject getDataObject(String key) {
@@ -27,32 +27,68 @@ public class Database implements Serializable, RevisionHandler {
     }
 
     public List<DataObject> epsilonRangeQuery(double epsilon, DataObject queryDataObject) {
-        List<DataObject> epsilonRange_List = new ArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        Collection<Callable<DataObject>> collection = new ArrayList<>();
+
+        List<DataObject> nEps = new ArrayList<>();
         for (Iterator i = dataObjectIterator(); i.hasNext(); ) {
             DataObject dataObject = (DataObject) i.next();
-            double distance = this.m_DistanceFunction.distance(queryDataObject.getInstance(), dataObject.getInstance());
-            if (distance < epsilon) {
-                epsilonRange_List.add(dataObject);
-            }
+            collection.add(new Wrapper(queryDataObject, dataObject, epsilon));
         }
-        return epsilonRange_List;
+
+        try {
+            List<Future<DataObject>> futures = executor.invokeAll(collection);
+            for (Future<DataObject> future : futures) {
+                DataObject dataObject = future.get();
+                if(dataObject != null) {
+                    nEps.add(dataObject);
+                }
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        executor.shutdown();
+        return nEps;
     }
 
-    private List k_nextNeighbourQuery(int k, double epsilon, DataObject dataObject) {
-        List<EpsilonRange_ListElement> epsilonRange = new ArrayList<>();
+     class Wrapper implements Callable<DataObject> {
+        private DataObject bag1;
+        private DataObject bag2;
+        private double epsilon;
+
+        private Wrapper(DataObject bag1, DataObject bag2, double epsilon) {
+            this.bag1 = bag1;
+            this.bag2 = bag2;
+            this.epsilon = epsilon;
+        }
+
+        @Override
+        public DataObject call() throws Exception {
+            double distance = df.distance(bag1.getInstance(), bag2.getInstance());
+            if (distance <= epsilon) {
+                return bag2;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    // SOLO SE USA EN OPTICS... NO MUY SEGURA DE CÓMO VA
+    private List kNextNeighbourQuery(int k, double epsilon, DataObject dataObject) {
+        List<NEpsElement> epsilonRange = new ArrayList<>();
         PriorityQueue priorityQueue = new PriorityQueue();
         for(Iterator i = this.dataObjectIterator(); i.hasNext(); ) {
             DataObject next_dataObject = (DataObject)i.next();
-            double dist = this.m_DistanceFunction.distance(dataObject.getInstance(), next_dataObject.getInstance());
-            if (dist <= epsilon) {
-                epsilonRange.add(new EpsilonRange_ListElement(dist, next_dataObject));
+            double distance = df.distance(dataObject.getInstance(), next_dataObject.getInstance());
+            if (distance <= epsilon) {
+                epsilonRange.add(new NEpsElement(distance, next_dataObject));
             }
 
             if (priorityQueue.size() < k) {
-                priorityQueue.add(dist, next_dataObject);
-            } else if (dist < priorityQueue.getPriority(0)) {
+                priorityQueue.add(distance, next_dataObject);
+            } else if (distance < priorityQueue.getPriority(0)) {
                 priorityQueue.next();
-                priorityQueue.add(dist, next_dataObject);
+                priorityQueue.add(distance, next_dataObject);
             }
         }
 
@@ -67,8 +103,9 @@ public class Database implements Serializable, RevisionHandler {
         return result;
     }
 
+    // SÓLO SE USA EN OPTICS
     public List coreDistance(int minPoints, double epsilon, DataObject dataObject) {
-        List list = this.k_nextNeighbourQuery(minPoints, epsilon, dataObject);
+        List list = this.kNextNeighbourQuery(minPoints, epsilon, dataObject);
         if (((List)list.get(1)).size() < minPoints) {
             list.add(DataObject.UNDEFINED);
             return list;

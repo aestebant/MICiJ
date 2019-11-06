@@ -3,11 +3,11 @@ package algorithms.utils;
 import weka.core.RevisionHandler;
 import weka.core.RevisionUtils;
 
-public class EpsilonRange_ListElement implements RevisionHandler {
+public class NEpsElement implements RevisionHandler {
     private DataObject dataObject;
     private double distance;
 
-    public EpsilonRange_ListElement(double distance, DataObject dataObject) {
+    public NEpsElement(double distance, DataObject dataObject) {
         this.distance = distance;
         this.dataObject = dataObject;
     }

@@ -13,7 +13,7 @@ public class Run {
 
         String[] datasets = {
 //                "component_relational",
-//                "eastwest_relational",
+                "eastwest_relational",
 //                "elephant_relational",
 //                "fox_relational",
 //                "function_relational",
@@ -26,7 +26,7 @@ public class Run {
 //                "suramin_relational",
 //                "tiger_relational",
 //                "trx_relational",
-                "westeast_relational"
+//                "westeast_relational"
         };
 
         String[] standardization = {
@@ -42,9 +42,9 @@ public class Run {
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 0.5 -M 2 -output-clusters -hausdorff-type average");
-        options.put("MISimpleKMeans", "-S 155 -num-slots 3 -V -hausdorff-type average");
-        options.put("BAMIC", "-S 155 -num-slots 3 -V");
+        options.put("MIDBSCAN", " -E 0.5 -M 2 -num-threads 4 -hausdorff-type average");
+        options.put("MISimpleKMeans", "-num-slots 4 -V -hausdorff-type average");
+        options.put("BAMIC", "-num-slots 4 -V -hausdorff-type average");
         options.put("MIOPTICS", "");
 
         for (String d : datasets) {
@@ -71,9 +71,8 @@ public class Run {
                         e.printStackTrace();
                     }*/
 
-
                     ClusterEvaluation evaluation = new ClusterEvaluation();
-                    String evalOptions = " -c last";
+                    String evalOptions = " -c last -num-threads 4";
                     try {
                         evaluation.setOptions(Utils.splitOptions(evalOptions));
                         evaluation.setClusterer(clusterer, Utils.splitOptions(options.get(c)));

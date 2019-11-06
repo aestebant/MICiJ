@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="mi-clustering:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/mi_clustering_jar</output-path>
+    <root id="archive" name="mi-clustering.jar">
+      <element id="module-output" name="mi-clustering" />
+      <element id="extracted-dir" path="/opt/weka-3-8-3/weka.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/wekafiles/packages/multiInstanceFilters/multiInstanceFilters.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/wekafiles/packages/multiInstanceLearning/multiInstanceLearning.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/wekafiles/packages/citationKNN/citationKNN.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/wekafiles/packages/optics_dbScan/optics_dbScan.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
