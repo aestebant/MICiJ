@@ -287,7 +287,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
     private int moveCentroids(Instances[] clusters) {
         int emptyClusterCount = 0;
-        this.centroids = new Instances(centroids, this.numClusters);
+        this.centroids = new Instances(centroids, numClusters);
 
         ExecutorService executor = Executors.newFixedThreadPool(executionSlots);
         Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(numClusters);
@@ -301,8 +301,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
             List<Future<Map<Integer, Instance>>> futures = executor.invokeAll(collection);
             for (Future<Map<Integer, Instance>> future : futures) {
                 Map<Integer, Instance> result = future.get();
-                for (Map.Entry<Integer, Instance> r : result.entrySet())
-                    centroids.add(r.getKey(), r.getValue());
+                for (Map.Entry<Integer, Instance> r : result.entrySet()) {
+                    centroids.add(r.getValue());
+                }
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -857,7 +858,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
 
         boolean containsNumeric = false;
         int maxV;
-        for (int i = 0; i < numClusters; ++i) {
+        for (int i = 0; i < centroids.numInstances(); ++i) {
             for (maxV = 0; maxV < numAttributes; ++maxV) {
                 if (clustersToPrint.attribute(maxV).name().length() > maxAttWidth) {
                     maxAttWidth = clustersToPrint.attribute(maxV).name().length();
