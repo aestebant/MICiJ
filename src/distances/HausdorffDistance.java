@@ -19,7 +19,7 @@ public class HausdorffDistance implements DistanceFunction {
     }
 
     public HausdorffDistance(Instances instances) {
-        df = new EuclideanDistance();
+        df = new EuclideanDistance(instances);
     }
 
     @Override
