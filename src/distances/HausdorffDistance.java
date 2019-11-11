@@ -1,5 +1,6 @@
 package distances;
 
+import utils.ProcessDataset;
 import weka.core.*;
 import weka.core.neighboursearch.PerformanceStats;
 
@@ -24,8 +25,8 @@ public class HausdorffDistance implements DistanceFunction {
 
     @Override
     public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
-        Instances i1 = preprocess(bag1);
-        Instances i2 = preprocess(bag2);
+        Instances i1 = ProcessDataset.extractInstances(bag1);
+        Instances i2 = ProcessDataset.extractInstances(bag2);
 
         assert i1.numAttributes() == i2.numAttributes();
 
@@ -74,27 +75,6 @@ public class HausdorffDistance implements DistanceFunction {
             e.printStackTrace();
         }
         return result;
-    }
-
-    private Instances preprocess(Instance bag) {
-        boolean isBag = false;
-        try {
-            isBag = bag.attribute(1).isRelationValued();
-        } catch (Exception ignored) {
-            //Capturar excepción Instance doesn't have access to a dataset e ignorarla.
-        }
-
-        if (isBag)
-            return new Instances(bag.relationalValue(1));
-        else {
-            ArrayList<Attribute> attributes = new ArrayList<>(bag.numAttributes());
-            for (int i = 0; i < bag.numAttributes(); ++i) {
-                attributes.add(new Attribute("att" + i));
-            }
-            Instances instances = new Instances("aux", attributes, 1);
-            instances.add(bag);
-            return instances;
-        }
     }
 
     private double maxHausdorff(Instances i1, Instances i2) {
