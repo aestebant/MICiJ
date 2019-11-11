@@ -36,7 +36,7 @@ public class Run {
         };
 
         String[] clustering = {
-                "MIDBSCAN",
+//                "MIDBSCAN",
                 "MISimpleKMeans",
                 "BAMIC",
         };
