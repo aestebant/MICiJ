@@ -175,7 +175,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MyClusterer
         for (int i = 0; i < this.numClusters; ++i) {
             if (this.showStdDevs) {
                 Instances instancesPerCluster = new Instances(bagsPerCluster[i].get(0).relationalValue(1));
-                for (int j = 0; j < bagsPerCluster[i].numInstances(); ++j)
+                for (int j = 1; j < bagsPerCluster[i].numInstances(); ++j)
                     instancesPerCluster.addAll(bagsPerCluster[i].get(j).relationalValue(1));
 
                 double[] variances = instancesPerCluster.variances();
