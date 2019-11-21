@@ -65,4 +65,12 @@ public class ProcessDataset {
         }
         return copied;
     }
+
+    public static double[] instanceToArray(Instance instance) {
+        double[] array = new double[instance.numAttributes()];
+        for (int i = 0; i < instance.numAttributes(); ++i) {
+            array[i] = instance.value(i);
+        }
+        return array;
+    }
 }
