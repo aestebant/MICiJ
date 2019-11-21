@@ -34,7 +34,7 @@ public class S_DbwIndex {
 
     public double computeIndex() {
         if (actualNumClusters == 0)
-            return 0D;
+            return Double.POSITIVE_INFINITY;
 
         double scat = computeScat();
         double densBw = computeDens_Bw();
@@ -102,15 +102,9 @@ public class S_DbwIndex {
                     u.addAll(instancesUnion.get(i));
                     u.addAll(instancesUnion.get(j));
 
-                    System.out.println("U debería tener: " + instancesUnion.get(i).numInstances() + " + " + instancesUnion.get(j).numInstances());
-                    System.out.println("Instancia de prueba tiene " + instances.get(0).relationalValue(1).numInstances());
-
                     Instance aux = ProcessDataset.copyBag(instances.get(0));
                     aux.relationalValue(1).delete();
                     aux.relationalValue(1).addAll(u);
-
-                    System.out.println("U tiene al final: " + aux.relationalValue(1).numInstances());
-                    System.out.println("===============================================");
 
                     double densityU = 0D;
                     double densityI = 0D;
