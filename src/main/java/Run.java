@@ -42,7 +42,7 @@ public class Run {
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 0.5 -M 2 -num-threads 1 -A MahalanobisDistance -hausdorff-type average");
+        options.put("MIDBSCAN", " -E 0.5 -M 2 -num-threads 1 -A EarthMoversDistance -hausdorff-type 1");
         options.put("MISimpleKMeans", "-num-slots 4 -N 3 -V -hausdorff-type minimal");
         options.put("BAMIC", "-num-slots 4 -V -hausdorff-type average");
         options.put("MIOPTICS", "");
