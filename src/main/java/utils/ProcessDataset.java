@@ -73,4 +73,12 @@ public class ProcessDataset {
         }
         return array;
     }
+
+    public static double[][] bagToMatrix(Instances bag) {
+        double[][] matrix = new double[bag.numInstances()][bag.numAttributes()];
+        for (int i = 0; i < bag.numInstances(); ++i) {
+            matrix[i] = instanceToArray(bag.get(i));
+        }
+        return matrix;
+    }
 }
