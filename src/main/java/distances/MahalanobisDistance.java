@@ -13,33 +13,9 @@ import weka.core.neighboursearch.PerformanceStats;
 import java.util.*;
 
 
-public class MahalanobisDistance implements DistanceFunction {
+public class MahalanobisDistance extends MIDistance {
 
-    private static Map<Set<Integer>, Double> cachedDistances = new HashMap<>();
-
-    @Override
-    public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
-        Set<Integer> key = new HashSet<>(2);
-        key.add(bag1.hashCode());
-        key.add(bag2.hashCode());
-        double distance;
-        if (cachedDistances.containsKey(key)) {
-            distance = cachedDistances.get(key);
-        } else {
-            distance = computeDistance(bag1, bag2);
-            cachedDistances.put(key, distance);
-        }
-
-        if (performanceStats != null)
-            performanceStats.incrCoordCount();
-
-        return distance;
-    }
-
-    private double computeDistance(Instance bag1, Instance bag2) {
-        Instances i1 = ProcessDataset.extractInstances(bag1);
-        Instances i2 = ProcessDataset.extractInstances(bag2);
-
+    protected double computeDistance(Instances i1, Instances i2) {
         double[][] data1 = new double[i1.numInstances()][i1.numAttributes()];
         double[][] data2 = new double[i2.numInstances()][i2.numAttributes()];
 
@@ -80,81 +56,6 @@ public class MahalanobisDistance implements DistanceFunction {
 
         RealMatrix result = meanSub.transpose().multiply(invCov).multiply(meanSub);
         return result.getData()[0][0];
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2) {
-        try {
-            return distance(bag1, bag2, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2, double v) {
-        try {
-            return distance(bag1, bag2, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2, double v, PerformanceStats performanceStats) {
-        try {
-            return distance(bag1, bag2, performanceStats);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public void setInstances(Instances instances) {
-
-    }
-
-    @Override
-    public Instances getInstances() {
-        return null;
-    }
-
-    @Override
-    public void setAttributeIndices(String s) {
-
-    }
-
-    @Override
-    public String getAttributeIndices() {
-        return null;
-    }
-
-    @Override
-    public void setInvertSelection(boolean b) {
-
-    }
-
-    @Override
-    public boolean getInvertSelection() {
-        return false;
-    }
-
-    @Override
-    public void postProcessDistances(double[] doubles) {
-
-    }
-
-    @Override
-    public void update(Instance instance) {
-
-    }
-
-    @Override
-    public void clean() {
-
     }
 
     @Override

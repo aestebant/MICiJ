@@ -1,154 +1,68 @@
 package distances;
 
-import utils.ProcessDataset;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.VectorialMean;
+import org.apache.commons.math3.stat.descriptive.rank.Max;
+import org.apache.commons.math3.stat.descriptive.rank.Min;
 import weka.core.*;
-import weka.core.neighboursearch.PerformanceStats;
 
 import java.util.*;
 
-public class HausdorffDistance implements DistanceFunction {
+public class HausdorffDistance extends MIDistance {
 
-    private static final int MIN = 1;
-    private static final int MAX = 2;
-    private static final int AVE = 3;
+    private static final int MAXMIN = 0;
+    private static final int MINMIN = 1;
+    private static final int MEANMIN = 2;
+    private static final int MEANMEAN = 3;
 
-    private int type = AVE;
-    private final DistanceFunction df;
+    private int type = MAXMIN;
 
-    public HausdorffDistance() {
-        df = new EuclideanDistance();
-    }
+    protected double computeDistance(Instances i1, Instances i2) {
+        double[][] distances = matrixDistance(i1, i2);
 
-    public HausdorffDistance(Instances instances) {
-        df = new EuclideanDistance(instances);
-    }
+        int n1 = i1.numInstances();
+        int n2 = i2.numInstances();
 
-    @Override
-    public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
-        Instances i1 = ProcessDataset.extractInstances(bag1);
-        Instances i2 = ProcessDataset.extractInstances(bag2);
-
-        assert i1.numAttributes() == i2.numAttributes();
-
-        double distance = 0D;
-        switch (type) {
-            case MIN:
-                distance = minHausdorff(i1, i2);
-                break;
-            case MAX:
-                distance = maxHausdorff(i1, i2);
-                break;
-            case AVE:
-                distance = aveHausdorff(i1, i2);
+        double[] minByRows = null;
+        if (type == MAXMIN || type == MINMIN || type == MEANMIN) {
+            minByRows = new double[n1];
+            for (int i = 0; i < n1; ++i)
+                minByRows[i] = new Min().evaluate(distances[i]);
         }
 
-        if (performanceStats != null)
-            performanceStats.incrCoordCount();
-
-        //System.out.println("Hausdorff distance between " + bag1.value(0) + " and " + bag2.value(0) + "-> " + distance);
-
-        return distance;
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2) {
         double result = 0D;
-        try {
-            result = this.distance(bag1, bag2, null);
-        } catch (Exception e) {
-            e.printStackTrace();
+
+        if (type == MAXMIN) {
+            result = new Max().evaluate(minByRows);
         }
-        return result;
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2, double cutOffValue) {
-        return this.distance(bag1, bag2);
-    }
-
-    @Override
-    public double distance(Instance bag1, Instance bag2, double cutOffValue, PerformanceStats performanceStats) {
-        double result = 0D;
-        try {
-            result = this.distance(bag1, bag2, performanceStats);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
-
-    private double maxHausdorff(Instances i1, Instances i2) {
-        double[][] distances = computeDistancesMatrix(i1, i2);
-        List<Double> minByRows = getMinByRows(distances);
-        double[][] distancesTrans = transpose(distances);
-        List<Double> minByCols = getMinByRows(distancesTrans);
-        return Math.max(Collections.max(minByRows), Collections.max(minByCols));
-    }
-
-    private double minHausdorff(Instances i1, Instances i2) {
-        double[][] distances = computeDistancesMatrix(i1, i2);
-        List<Double> minByRows = getMinByRows(distances);
-        double[][] distancesTrans = transpose(distances);
-        List<Double> minByCols = getMinByRows(distancesTrans);
-        return Math.min(Collections.min(minByRows), Collections.min(minByCols));
-    }
-
-    private double aveHausdorff(Instances i1, Instances i2) {
-        double[][] distances = computeDistancesMatrix(i1, i2);
-        List<Double> minByRows = getMinByRows(distances);
-        double[][] distancesTrans = transpose(distances);
-        List<Double> minByCols = getMinByRows(distancesTrans);
-        double sum1 = minByRows.stream().mapToDouble(Double::doubleValue).sum();
-        double sum2 = minByCols.stream().mapToDouble(Double::doubleValue).sum();
-        return (sum1 + sum2) / (i1.size() + i2.size());
-    }
-
-    private double[][] computeDistancesMatrix(Instances i1, Instances i2) {
-        int size1 = i1.size();
-        int size2 = i2.size();
-        double[][] distances = new double[size1][size2];
-        for (int i = 0; i < size1; ++i) {
-            for (int j = 0; j < size2; ++j) {
-                distances[i][j] = df.distance(i1.get(i), i2.get(j));
+        if (type == MINMIN) {
+            result = new Min().evaluate(minByRows);
+        } else if (type == MEANMIN) {
+            result = new Mean().evaluate(minByRows);
+        } else if (type == MEANMEAN) {
+            VectorialMean mean = new VectorialMean(n2);
+            for (int i = 0; i < n1; ++i) {
+                    mean.increment(distances[i]);
             }
-        }
-        return distances;
-    }
-
-    private double[][] transpose(double[][] matrix) {
-        int nrows = matrix.length;
-        int ncols = matrix[0].length;
-
-        double[][] result = new double[ncols][nrows];
-
-        for (int i = 0; i < nrows; ++i) {
-            for (int j = 0; j < ncols; ++j) {
-                result[j][i] = matrix[i][j];
-            }
+            result = new Mean().evaluate(mean.getResult());
         }
         return result;
-    }
-
-    private List<Double> getMinByRows(double[][] matrix) {
-        List<Double> minByRows = new ArrayList<>(matrix.length);
-        for (double[] row : matrix) {
-            DoubleSummaryStatistics stat = Arrays.stream(row).summaryStatistics();
-            minByRows.add(stat.getMin());
-        }
-        return minByRows;
     }
 
     @Override
     public String toString() {
         String result = "ERROR";
         switch (type) {
-            case MIN:
+            case MAXMIN:
+                result = "Maximal Minimal Hausdorff Distance";
+                break;
+            case MINMIN:
                 result = "Minimal Hausdorff Distance";
                 break;
-            case MAX:
-                result = "Maximal Hausdorff Distance";
+            case MEANMIN:
+                result = "Average Minimal Hausdorff Distance";
                 break;
-            case AVE:
+            case MEANMEAN:
                 result = "Average Hausdorff Distance";
                 break;
         }
@@ -163,49 +77,6 @@ public class HausdorffDistance implements DistanceFunction {
     }
 
     @Override
-    public void postProcessDistances(double[] doubles) {
-
-    }
-
-    @Override
-    public void update(Instance instance) {
-
-    }
-
-    @Override
-    public void clean() {
-
-    }
-
-    @Override
-    public void setInstances(Instances instances) {
-        df.setInstances(instances.get(0).relationalValue(1));
-    }
-
-    @Override
-    public Instances getInstances() {
-        return null;
-    }
-
-    @Override
-    public void setAttributeIndices(String s) {
-    }
-
-    @Override
-    public String getAttributeIndices() {
-        return null;
-    }
-
-    @Override
-    public void setInvertSelection(boolean b) {
-    }
-
-    @Override
-    public boolean getInvertSelection() {
-        return false;
-    }
-
-    @Override
     public Enumeration<Option> listOptions() {
         Vector<Option> vector = new Vector<>();
         vector.add(new Option("Type of distance (default average).", "hausdorff-type", 1, "-hausdorff-type <average|minimal|maximal>"));
@@ -215,12 +86,22 @@ public class HausdorffDistance implements DistanceFunction {
     @Override
     public void setOptions(String[] options) throws Exception {
         String type = Utils.getOption("hausdorff-type", options);
-        if (type.equals("minimal"))
-            this.type = MIN;
-        else if (type.equals("maximal"))
-            this.type = MAX;
-        else
-            this.type = AVE;
+        if (type.length() > 0) {
+            switch (Integer.parseInt(type)) {
+                case MAXMIN:
+                    this.type = MAXMIN;
+                    break;
+                case MINMIN:
+                    this.type = MINMIN;
+                    break;
+                case MEANMIN:
+                    this.type = MEANMIN;
+                    break;
+                case MEANMEAN:
+                    this.type = MEANMEAN;
+                    break;
+            }
+        }
     }
 
     @Override
