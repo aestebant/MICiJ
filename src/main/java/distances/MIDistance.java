@@ -8,7 +8,7 @@ import java.util.*;
 
 public abstract class MIDistance implements DistanceFunction {
     private DistanceFunction baseDistFun;
-    private static Map<List<Integer>, Double> cachedDistances = new HashMap<>();
+    private static Map<Set<Integer>, Double> cachedDistances = new HashMap<>();
 
     public MIDistance() {
         baseDistFun = new EuclideanDistance();
@@ -41,8 +41,7 @@ public abstract class MIDistance implements DistanceFunction {
             throw (new Exception("Number of attributes is not equals"));
         }
 
-        // La clave es una lista y no un conjunto porque el orden sí importa: no son distancias sino disimilaridades
-        List<Integer> key = new ArrayList<>(2);
+        Set<Integer> key = new HashSet<>(2);
         key.add(bag1.hashCode());
         key.add(bag2.hashCode());
         double distance;
@@ -53,11 +52,10 @@ public abstract class MIDistance implements DistanceFunction {
             cachedDistances.put(key, distance);
         }
 
-
         if (performanceStats != null)
             performanceStats.incrCoordCount();
 
-        //System.out.println("Hausdorff distance between " + bag1.value(0) + " and " + bag2.value(0) + "-> " + distance);
+        //System.out.println("MI distance between " + bag1.value(0) + " and " + bag2.value(0) + "-> " + distance);
 
         return distance;
     }

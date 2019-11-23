@@ -10,10 +10,10 @@ import java.util.*;
 
 public class HausdorffDistance extends MIDistance {
 
-    private static final int MAXMIN = 0;
-    private static final int MINMIN = 1;
-    private static final int MEANMIN = 2;
-    private static final int MEANMEAN = 3;
+    public static final int MAXMIN = 0;
+    public static final int MINMIN = 1;
+    public static final int MEANMIN = 2;
+    public static final int MEAN = 3;
 
     private int type = MAXMIN;
 
@@ -34,12 +34,11 @@ public class HausdorffDistance extends MIDistance {
 
         if (type == MAXMIN) {
             result = new Max().evaluate(minByRows);
-        }
-        if (type == MINMIN) {
+        } else if (type == MINMIN) {
             result = new Min().evaluate(minByRows);
         } else if (type == MEANMIN) {
             result = new Mean().evaluate(minByRows);
-        } else if (type == MEANMEAN) {
+        } else if (type == MEAN) {
             VectorialMean mean = new VectorialMean(n2);
             for (int i = 0; i < n1; ++i) {
                     mean.increment(distances[i]);
@@ -62,18 +61,11 @@ public class HausdorffDistance extends MIDistance {
             case MEANMIN:
                 result = "Average Minimal Hausdorff Distance";
                 break;
-            case MEANMEAN:
+            case MEAN:
                 result = "Average Hausdorff Distance";
                 break;
         }
         return result;
-    }
-
-    private void printDistances(double[][] distances) {
-        for (double[] distance : distances) {
-            for (double v : distance) System.out.printf("%.2f ", v);
-            System.out.println();
-        }
     }
 
     @Override
@@ -97,8 +89,8 @@ public class HausdorffDistance extends MIDistance {
                 case MEANMIN:
                     this.type = MEANMIN;
                     break;
-                case MEANMEAN:
-                    this.type = MEANMEAN;
+                case MEAN:
+                    this.type = MEAN;
                     break;
             }
         }

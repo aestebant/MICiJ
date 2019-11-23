@@ -58,4 +58,9 @@ public class EarthMoversDistance extends MIDistance {
         PointValuePair result = solver.optimize(objective, constraintSet, positivity);
         return result.getPoint();
     }
+
+    @Override
+    public String toString() {
+        return "Earth Movers Distance";
+    }
 }

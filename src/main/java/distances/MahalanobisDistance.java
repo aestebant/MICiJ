@@ -5,9 +5,6 @@ import org.apache.commons.math3.stat.correlation.Covariance;
 import org.apache.commons.math3.stat.descriptive.moment.VectorialMean;
 import utils.ProcessDataset;
 import weka.core.Instances;
-import weka.core.Option;
-
-import java.util.Enumeration;
 
 
 public class MahalanobisDistance extends MIDistance {
@@ -47,17 +44,7 @@ public class MahalanobisDistance extends MIDistance {
     }
 
     @Override
-    public Enumeration<Option> listOptions() {
-        return null;
-    }
-
-    @Override
-    public void setOptions(String[] strings) throws Exception {
-
-    }
-
-    @Override
-    public String[] getOptions() {
-        return new String[0];
+    public String toString() {
+        return "Mahalanobis Distance";
     }
 }
