@@ -142,7 +142,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
         vector.addElement(new Option("\tminPoints (default = 6)", "M", 1, "-M <int>"));
         vector.add(new Option("\tDistance function to use.\n\t(default: HausdorffDistance)", "A", 1, "-A <classname and options>"));
         vector.add(new Option("\tOutput clusters assignments", "output-clusters", 0, "-output-clusters"));
-        vector.add(new Option("\tNumber of threads to run in parallel", "num-threads", 1, "-num-threads <int>"));
+        vector.add(new Option("\tNumber of threads to run in parallel", "num-slots", 1, "-num-slots <int>"));
         return vector.elements();
     }
 
@@ -171,7 +171,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
             this.setDistanceFunction(new HausdorffDistance(), options);
         }
 
-        String nThreads = Utils.getOption("num-threads", options);
+        String nThreads = Utils.getOption("num-slots", options);
         if (nThreads.length() != 0) {
             this.nThreads = Integer.parseInt(nThreads);
         }

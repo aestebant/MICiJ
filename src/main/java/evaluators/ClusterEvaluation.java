@@ -163,18 +163,16 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             result.append("\nUnclustered instances: ").append(unclusteredInstances);
         }
 
-        result.append("\nSilhouette index: ").append(silhouette);
-        result.append("\nS_Dbw index: ").append(sdbw);
-
         if (classAtt > -1) {
-            result.append("\n\nClass attribute: \"").append(instances.classAttribute().name()).append("\"\n");
+            result.append("Class attribute: \"").append(instances.classAttribute().name()).append("\"\n");
             result.append("Classes to Clusters:\n");
-            result.append(printConfusionMatrix(clusterTotals, new Instances(instances, 0))).append("\n");
+            result.append(printConfusionMatrix(clusterTotals, new Instances(instances, 0)));
 
             int Cwidth = 1 + (int) (Math.log(maxNumClusters) / Math.log(10D));
+            result.append("Assignation:\n");
             for (int i = 0; i < maxNumClusters; ++i) {
                 if (clusterTotals[i] > 0) {
-                    result.append("Cluster ").append(Utils.doubleToString(i, Cwidth, 0));
+                    result.append("\tCluster ").append(Utils.doubleToString(i, Cwidth, 0));
                     result.append(" <-- ");
                     if (classToCluster[i] < 0) {
                         result.append("No class\n");
@@ -183,17 +181,23 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
                     }
                 }
             }
-
-            result.append("\nIncorrectly clustered instances :\t")
+            result.append("Incorrectly clustered instances :\t")
                     .append(classToCluster[maxNumClusters]).append("\t(")
                     .append(Utils.doubleToString((double) classToCluster[maxNumClusters] / instances.numInstances() * 100.0D, 8, 4))
                     .append(" %)\n");
-
-            result.append("Purity: ").append(purity).append("\n");
-            result.append("Rand index: ").append(rand).append("\n");
         }
+
         if (printClusterAssignments)
             result.append(printClusterings());
+
+        result.append("Internal validation metrics:\n");
+        result.append("\tSilhouette index: ").append(silhouette).append("\n");
+        result.append("\tS_Dbw index: ").append(sdbw).append("\n");
+        if (classAtt > -1) {
+            result.append("External validation metrics:\n");
+            result.append("\tPurity: ").append(purity).append("\n");
+            result.append("\tRand index: ").append(rand).append("\n");
+        }
 
         return result.toString();
     }

@@ -30,21 +30,21 @@ public class Run {
         };
 
         String[] standardization = {
-                "",
-//                "-z4",
+//                "",
+                "-z4",
 //                "-z5"
         };
 
         String[] clustering = {
                 "MIDBSCAN",
-        //        "MISimpleKMeans",
-        //        "BAMIC",
+                "MISimpleKMeans",
+                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 0.5 -M 2 -num-threads 1 -A EarthMoversDistance -hausdorff-type 1");
-        options.put("MISimpleKMeans", "-num-slots 4 -N 3 -V -hausdorff-type minimal");
-        options.put("BAMIC", "-num-slots 4 -V -hausdorff-type average");
+        options.put("MIDBSCAN", " -E 2.5 -M 3 -num-slots 4 -output-clusters -A EarthMoversDistance");
+        options.put("MISimpleKMeans", "-num-slots 4 -N 3 -A HausdorffDistance -hausdorff-type 2");
+        options.put("BAMIC", "-num-slots 4 -A MahalanobisDistance");
         options.put("MIOPTICS", "");
 
         for (String d : datasets) {
