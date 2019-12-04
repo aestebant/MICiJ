@@ -8,8 +8,9 @@ public class Pru {
     public static void main(String[] args) {
         String dataset = "datasets/eastwest_relational.arff";
         String distance = "MahalanobisDistance";
+        String distanceConfig = "";
         int k = 2;
-        WrapperEvaluation evaluation = new WrapperEvaluation(dataset, distance, k);
+        WrapperEvaluation evaluation = new WrapperEvaluation(dataset, distance, distanceConfig, k);
 
         int[] resFromJCLEC = {1,1,0,0,1,1,1,0,0,0,0,0,0,1,0,0,1,0,0,1};
         Vector<Integer> clusterAssignmet = new Vector<>(resFromJCLEC.length);
