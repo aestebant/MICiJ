@@ -77,8 +77,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         sdbw = sDbw.computeIndex(clusterAssignments, actualNumClusters);
 
         if (classAtt > -1) {
-            ClassEvaluation ce = new ClassEvaluation(instances, maxNumClusters, numClasses, clusterAssignments);
-            confusion = ce.computeEval();
+            ClassEvaluation ce = new ClassEvaluation(instances, maxNumClusters, numClasses);
+            confusion = ce.computeEval(clusterAssignments);
             clusterTotals = ce.getClusterTotals();
             classToCluster = ce.getClassToCluster();
             purity = ce.computePurity();

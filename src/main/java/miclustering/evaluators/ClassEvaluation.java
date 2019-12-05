@@ -11,18 +11,16 @@ public class ClassEvaluation {
     private int maxNumClusters;
     private int numClasses;
     private int[] clusterTotals;
-    private Vector<Integer> clusterAssignments;
     private int[] classToCluster;
     private int[][] confusion;
 
-    public ClassEvaluation(Instances instances, int maxNumClusters, int numClasses, Vector<Integer> clusterAssignments) {
+    public ClassEvaluation(Instances instances, int maxNumClusters, int numClasses) {
         this.instances = instances;
         this.maxNumClusters = maxNumClusters;
         this.numClasses = numClasses;
-        this.clusterAssignments = clusterAssignments;
     }
 
-    public int[][] computeEval() throws Exception {
+    public int[][] computeEval(Vector<Integer> clusterAssignments) throws Exception {
         int numInstances = instances.numInstances();
 
         confusion = new int[maxNumClusters][numClasses];
