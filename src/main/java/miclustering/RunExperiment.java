@@ -15,7 +15,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class LargeRun {
+public class RunExperiment {
 
     private static String[] datasets;
     private static String[] standardization;
@@ -29,12 +29,12 @@ public class LargeRun {
     private static FileWriter reportFileWriter;
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Wrong use. Format <reportTitle> <nThreads>");
+        if (args.length != 1) {
+            System.err.println("Wrong use. Format <reportTitle>");
             return;
         }
         reportTitle = args[0];
-        nThreads = Integer.parseInt(args[1]);
+        nThreads = Runtime.getRuntime().availableProcessors();
 
         setExperiments();
         setSaveResults();
@@ -97,38 +97,39 @@ public class LargeRun {
 
     private static void setExperiments() {
         datasets = new String[]{
-                "component_relational",
-                "eastwest_relational",
-                "elephant_relational",
-                "fox_relational",
-                "function_relational",
-                "musk1_relational",
-                "musk2_relational",
-                "mutagenesis3_atoms_relational",
-                "mutagenesis3_bonds_relational",
-                "mutagenesis3_chains_relational",
-                "process_relational",
-                "suramin_relational",
-                "tiger_relational",
-                "trx_relational",
-                "westeast_relational"
+//                "component_relational",
+//                "eastwest_relational",
+//                "elephant_relational",
+//                "fox_relational",
+//                "function_relational",
+//                "musk1_relational",
+//                "musk2_relational",
+//                "mutagenesis3_atoms_relational",
+//                "mutagenesis3_bonds_relational",
+//                "mutagenesis3_chains_relational",
+//                "process_relational",
+//                "suramin_relational",
+//                "tiger_relational",
+//                "trx_relational",
+//                "westeast_relational",
+                "animals_relational"
         };
 
         standardization = new String[]{
                 "",
-                "-z4",
+                "-z1",
                 "-z5"
         };
 
         clustering = new String[]{
-                "MIDBSCAN",
-                "MISimpleKMeans",
+//                "MIDBSCAN",
+//                "MISimpleKMeans",
                 "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 4; ++k) {
-            for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
+            for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
                 kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
             }
         }

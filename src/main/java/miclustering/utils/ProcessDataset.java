@@ -49,7 +49,7 @@ public class ProcessDataset {
         ByteArrayOutputStream aux = new ByteArrayOutputStream();
         ArffSaver saver = new ArffSaver();
         saver.setRetrieval(Saver.INCREMENTAL);
-        Instance copied = null;
+        Instance copy = null;
 
         try {
             saver.setDestination(aux);
@@ -59,11 +59,11 @@ public class ProcessDataset {
 
             Reader reader = new InputStreamReader(new ByteArrayInputStream(aux.toByteArray()));
             ArffLoader.ArffReader arffReader = new ArffLoader.ArffReader(reader);
-            copied = arffReader.getData().get(0);
+            copy = arffReader.getData().get(0);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return copied;
+        return copy;
     }
 
     public static double[] instanceToArray(Instance instance) {

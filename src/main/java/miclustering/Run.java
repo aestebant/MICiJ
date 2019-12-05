@@ -14,8 +14,9 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
+                "animals_relational"
 //                "component_relational",
-                "eastwest_relational",
+//                "eastwest_relational",
 //                "elephant_relational",
 //                "fox_relational",
 //                "function_relational",
@@ -32,21 +33,21 @@ public class Run {
         };
 
         String[] standardization = {
-//                "",
-                "-z4",
+                "",
+//                "-z4",
 //                "-z5"
         };
 
         String[] clustering = {
-                "MIDBSCAN",
-                "MISimpleKMeans",
+//                "MIDBSCAN",
+//                "MISimpleKMeans",
                 "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 2.5 -M 3 -num-slots 4 -output-clusters -A EarthMoversDistance");
+        options.put("MIDBSCAN", " -E 2.5 -M 3 -num-slots 4 -output-clusters -A HausdorffDistance -hausdorff-type 0");
         options.put("MISimpleKMeans", "-num-slots 4 -N 3 -A HausdorffDistance -hausdorff-type 2");
-        options.put("BAMIC", "-num-slots 4 -A MahalanobisDistance");
+        options.put("BAMIC", "-num-slots 4 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIOPTICS", "");
 
         for (String d : datasets) {
