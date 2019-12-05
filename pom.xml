@@ -21,7 +21,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>fully.qualified.MainClass</mainClass>
+                            <mainClass>miclustering.RunExperiment</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
