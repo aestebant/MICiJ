@@ -5,7 +5,6 @@ import weka.core.DistanceFunction;
 import weka.core.Instances;
 import weka.core.Utils;
 
-import java.util.Collections;
 import java.util.Vector;
 
 public class WrapperEvaluation {
@@ -33,11 +32,11 @@ public class WrapperEvaluation {
     }
 
     public double getSilhouette(Vector<Integer> clusterAssignment) {
-        return silhouette.computeIndex(clusterAssignment, Collections.max(clusterAssignment)+1, null);
+        return silhouette.computeIndex(clusterAssignment, null);
     }
 
     public double getSdbw(Vector<Integer> clusterAssignment) {
-        return sdbw.computeIndex(clusterAssignment, Collections.max(clusterAssignment)+1);
+        return sdbw.computeIndex(clusterAssignment);
     }
 
     public double getPurity(Vector<Integer> clusterAssignment) {

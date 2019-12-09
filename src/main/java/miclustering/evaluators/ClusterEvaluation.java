@@ -72,9 +72,9 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         countRealClusters();
 
         SilhouetteIndex s = new SilhouetteIndex(aux, maxNumClusters, distFunction, numThreads);
-        silhouette = s.computeIndex(clusterAssignments, actualNumClusters, instancesPerCluster);
+        silhouette = s.computeIndex(clusterAssignments, instancesPerCluster);
         S_DbwIndex sDbw = new S_DbwIndex(aux, maxNumClusters, distFunction);
-        sdbw = sDbw.computeIndex(clusterAssignments, actualNumClusters);
+        sdbw = sDbw.computeIndex(clusterAssignments);
 
         if (classAtt > -1) {
             ClassEvaluation ce = new ClassEvaluation(instances, maxNumClusters, numClasses);

@@ -1,12 +1,14 @@
 package miclustering.evaluators;
 
-import org.apache.commons.math3.linear.ArrayRealVector;
 import miclustering.utils.ProcessDataset;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.util.FastMath;
 import weka.core.DenseInstance;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -16,14 +18,9 @@ import java.util.stream.IntStream;
  * Esta métrica no tiene en cuenta las instancias clasificadas como ruido.
  */
 public class S_DbwIndex {
-    private int actualNumClusters;
     private int maxNumClusters;
-    private Vector<Integer> clusterAssignments;
     private DistanceFunction distanceFunction;
     private Instances instances;
-    private Map<Integer, Double> l2NormClusters;
-    private Map<Integer, Instances> instancesUnion;
-    private int[] nInstPerCluster;
 
     public S_DbwIndex(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
         this.instances = instances;
@@ -31,14 +28,36 @@ public class S_DbwIndex {
         this.distanceFunction = distanceFunction;
     }
 
-    public double computeIndex(Vector<Integer> clusterAssignments, int actualNumClusters) {
+    public double computeIndex(Vector<Integer> clusterAssignments) {
+        int actualNumClusters = Collections.max(clusterAssignments) + 1;
         if (actualNumClusters == 0)
             return Double.POSITIVE_INFINITY;
-        this.actualNumClusters = actualNumClusters;
-        this.clusterAssignments = clusterAssignments;
 
-        double scat = computeScat();
-        double densBw = computeDens_Bw();
+        int[] nInstPerCluster = new int[maxNumClusters];
+        for (int i = 0; i < clusterAssignments.size(); ++i) {
+            int clusterIdx = clusterAssignments.get(i);
+            if (clusterIdx >= 0)
+                nInstPerCluster[clusterIdx] += instances.get(i).relationalValue(1).numInstances();
+        }
+
+        Map<Integer, Instances> instancesUnion = new HashMap<>(maxNumClusters);
+        for (int i = 0; i < maxNumClusters; ++i) {
+            instancesUnion.put(i, new Instances(instances.get(0).relationalValue(1), nInstPerCluster[i]));
+        }
+        for (int i = 0; i < clusterAssignments.size(); ++i) {
+            int clusterIdx = clusterAssignments.get(i);
+            if (clusterIdx >= 0)
+                instancesUnion.get(clusterIdx).addAll(instances.get(i).relationalValue(1));
+        }
+
+        Map<Integer, Double> l2NormClusters = new HashMap<>(maxNumClusters);
+        for (int i = 0; i < maxNumClusters; ++i) {
+            double[] variances = instancesUnion.get(i).variances();
+            l2NormClusters.put(i, new ArrayRealVector(variances).getNorm());
+        }
+
+        double scat = computeScat(actualNumClusters, nInstPerCluster, instancesUnion, l2NormClusters);
+        double densBw = computeDens_Bw(clusterAssignments, actualNumClusters, nInstPerCluster, instancesUnion, l2NormClusters);
 
         return scat + densBw;
     }
@@ -46,41 +65,17 @@ public class S_DbwIndex {
     /**
      * Intra-cluster variance
      */
-    private double computeScat() {
-        int numInstances = instances.numInstances();
-
-        nInstPerCluster = new int[maxNumClusters];
-        for (int i = 0; i < numInstances; ++i) {
-            int clusterIdx = clusterAssignments.get(i);
-            if (clusterIdx >= 0)
-                nInstPerCluster[clusterIdx] += instances.get(i).relationalValue(1).numInstances();
-        }
-
-        instancesUnion = new HashMap<>(maxNumClusters);
-        for (int i = 0; i < maxNumClusters; ++i) {
-            instancesUnion.put(i, new Instances(instances.get(0).relationalValue(1), nInstPerCluster[i]));
-        }
-        for (int i = 0; i < numInstances; ++i) {
-            int clusterIdx = clusterAssignments.get(i);
-            if (clusterIdx >= 0)
-                instancesUnion.get(clusterIdx).addAll(instances.get(i).relationalValue(1));
-        }
-
-        l2NormClusters = new HashMap<>(maxNumClusters);
-        for (int i = 0; i < maxNumClusters; ++i) {
-            double[] variances = instancesUnion.get(i).variances();
-            l2NormClusters.put(i, new ArrayRealVector(variances).getNorm());
-        }
-
+    private double computeScat(int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
         Instances datasetUnion = new Instances(instances.get(0).relationalValue(1), IntStream.of(nInstPerCluster).sum());
-        for (int i = 1; i < maxNumClusters; ++i)
+        for (int i = 0; i < maxNumClusters; ++i)
             datasetUnion.addAll(instancesUnion.get(i));
-        double[] variancesDataset = datasetUnion.variances();
-        double l2NormDataset = new ArrayRealVector(variancesDataset).getNorm();
+        double l2NormDataset = new ArrayRealVector(datasetUnion.variances()).getNorm();
 
         double result = 0;
-        for (int i = 0; i < maxNumClusters; ++i)
-            result += l2NormClusters.get(i) / l2NormDataset;
+        for (int i = 0; i < maxNumClusters; ++i) {
+            if (nInstPerCluster[i] > 0)
+                result += l2NormClusters.get(i) / l2NormDataset;
+        }
         result /= actualNumClusters;
 
         return result;
@@ -89,11 +84,11 @@ public class S_DbwIndex {
     /**
      * Inter-cluster density
      */
-    private double computeDens_Bw() {
+    private double computeDens_Bw(Vector<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
         int numInstances = instances.numInstances();
 
         double stdev = l2NormClusters.values().stream().mapToDouble(Double::doubleValue).sum();
-        stdev = Math.sqrt(stdev) / actualNumClusters;
+        stdev = FastMath.sqrt(stdev) / actualNumClusters;
 
         double result = 0D;
         for (int i = 0; i < maxNumClusters; ++i) {
@@ -121,7 +116,7 @@ public class S_DbwIndex {
                                 densityJ++;
                         }
                     }
-                    result += densityU / Math.max(densityI, densityJ);
+                    result += densityU / FastMath.max(densityI, densityJ);
                 }
             }
         }
@@ -133,12 +128,12 @@ public class S_DbwIndex {
      * Not valid for distribution-based miclustering.distances
      */
     @SuppressWarnings("unused")
-    private double computeDens_BwSingleInstance() {
+    private double computeDens_BwSingleInstance(Vector<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
         int numAttributes = instances.get(0).relationalValue(1).numAttributes();
         int numInstances = instances.numInstances();
 
         double stdev = l2NormClusters.values().stream().mapToDouble(Double::doubleValue).sum();
-        stdev = Math.sqrt(stdev) / actualNumClusters;
+        stdev = FastMath.sqrt(stdev) / actualNumClusters;
 
         Map<Integer, Instance> clustersCenters = new HashMap<>(actualNumClusters);
         for (int i = 0; i < maxNumClusters; ++i) {
@@ -151,7 +146,7 @@ public class S_DbwIndex {
         double result = 0D;
         for (int i = 0; i < maxNumClusters; ++i) {
             for (int j = 0; j < maxNumClusters; ++j) {
-                if (i != j) {
+                if (i != j && nInstPerCluster[i] > 0 && nInstPerCluster[j] > 0) {
                     double[] means = new double[numAttributes];
                     for (int k = 0; k < numAttributes; ++k)
                         means[k] = (clustersCenters.get(i).value(k) + clustersCenters.get(j).value(k)) / 2;
@@ -172,7 +167,7 @@ public class S_DbwIndex {
                                 densityJ++;
                         }
                     }
-                    result += densityU / Math.max(densityI, densityJ);
+                    result += densityU / FastMath.max(densityI, densityJ);
                 }
             }
         }

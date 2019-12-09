@@ -20,7 +20,8 @@ public class SilhouetteIndex {
         distances = computeDistanceMatrix(instances);
     }
 
-    public double computeIndex(Vector<Integer> clusterAssignments, int actualNumClusters, int[] instancesPerCluster) {
+    public double computeIndex(Vector<Integer> clusterAssignments, int[] instancesPerCluster) {
+        int actualNumClusters = Collections.max(clusterAssignments) + 1;
         if (actualNumClusters == 0)
             return -1;
 
