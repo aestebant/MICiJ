@@ -131,8 +131,7 @@ public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHa
                         .append(" (").append(dataObject.toString()).append(")\n");
             }
         }
-
-        return result.toString() + "\n";
+        return result.toString();
     }
 
     @Override

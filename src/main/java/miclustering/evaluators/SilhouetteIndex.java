@@ -24,14 +24,7 @@ public class SilhouetteIndex {
         int actualNumClusters = Collections.max(clusterAssignments) + 1;
         if (actualNumClusters == 0)
             return -1;
-
         int numInstances = clusterAssignments.size();
-        if (instancesPerCluster == null) {
-            instancesPerCluster = new int[maxNumClusters];
-            for (Integer classIdx : clusterAssignments) {
-                instancesPerCluster[classIdx]++;
-            }
-        }
 
         List<Double> silhouette = new ArrayList<>(numInstances);
 

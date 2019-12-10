@@ -39,13 +39,13 @@ public class Run {
         };
 
         String[] clustering = {
-//                "MIDBSCAN",
+                "MIDBSCAN",
 //                "MISimpleKMeans",
-                "BAMIC",
+//                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 2.5 -M 3 -num-slots 4 -output-clusters -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIDBSCAN", " -E 2.5 -M 3 -num-slots 4 -A HausdorffDistance -hausdorff-type 0");
         options.put("MISimpleKMeans", "-num-slots 4 -N 3 -A HausdorffDistance -hausdorff-type 2");
         options.put("BAMIC", "-num-slots 4 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIOPTICS", "");

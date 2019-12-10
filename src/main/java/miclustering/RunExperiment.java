@@ -1,8 +1,10 @@
 package miclustering;
 
 import miclustering.algorithms.MyClusterer;
+import miclustering.evaluators.ClassEvalResult;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
+import miclustering.utils.PrintConfusionMatrix;
 import miclustering.utils.ProcessDataset;
 import weka.clusterers.Clusterer;
 import weka.core.Instances;
@@ -73,11 +75,23 @@ public class RunExperiment {
                             e.printStackTrace();
                         }
 
+                        String distance = ((MyClusterer)clusterer).getDistanceFunction().toString();
+                        int actualNClusters = eval.getActualNumClusters();
+                        int clusteredBags = dataset.numInstances()-eval.getUnclusteredInstances();
+                        int unclusteredBags = eval.getUnclusteredInstances();
+                        double silhouette = eval.getSilhouette();
+                        double sdbw = eval.getSdbw();
+                        ClassEvalResult cer = eval.getClassEvalResult();
+                        double purity = eval.getPurity();
+                        double rand = eval.getRand();
+                        double time = ((MyClusterer)clusterer).getElapsedTime();
                         try {
                             reportFileWriter.flush();
-                            reportFileWriter.write(c + "," + config + "," + ((MyClusterer)clusterer).getDistanceFunction() + "," + d + "," + z + "," + eval.getActualNumClusters()
-                                    + "," + dataset.numInstances() + "," + (dataset.numInstances()-eval.getUnclusteredInstances()) + "," + eval.getUnclusteredInstances() + "," + eval.getSilhouette() + ","
-                                    + eval.getSdbw() + "," + eval.getPurity() + "," + eval.getRand() + "," + eval.getConfussion() + "," + ((MyClusterer)clusterer).getElapsedTime() + "\n"
+                            reportFileWriter.write(c + "," + config + "," + distance
+                                    + "," + d + "," + z + "," + actualNClusters + "," + dataset.numInstances()
+                                    + "," + clusteredBags + "," + unclusteredBags
+                                    + "," + silhouette + "," + sdbw + "," + purity + "," + rand
+                                    + "," + PrintConfusionMatrix.singleLine(cer.getConfMatrix()) + "," + time + "\n"
                             );
                         } catch (Exception e) {
                             e.printStackTrace();

@@ -2,6 +2,7 @@ package miclustering;
 
 import miclustering.evaluators.WrapperEvaluation;
 
+import java.util.Map;
 import java.util.Vector;
 
 public class RunWrapperEval {
@@ -16,13 +17,13 @@ public class RunWrapperEval {
         Vector<Integer> clusterAssignmet = new Vector<>(resFromJCLEC.length);
         for (int value : resFromJCLEC) clusterAssignmet.addElement(value);
 
-        String sb = "1000,1000,0.9,0.5,animals_relational,," +
-                evaluation.getDistanceFunction() + "," +
-                k + "," +
-                evaluation.getSilhouette(clusterAssignmet) + "," +
-                evaluation.getSdbw(clusterAssignmet) + "," +
-                evaluation.getPurity(clusterAssignmet) + "," +
-                evaluation.getRand(clusterAssignmet) + "\n";
+        double silhouette = evaluation.getSilhouette(clusterAssignmet);
+        double sdbw = evaluation.getSdbw(clusterAssignmet);
+        Map<String, String> externalEval = evaluation.getExternalEvaluation(clusterAssignmet);
+
+        String sb = "1000,1000,0.9,0.5,animals_relational,," + evaluation.getDistanceFunction() + "," + k + "," +
+                silhouette + "," + sdbw + "," + externalEval.get("purity") + "," + externalEval.get("rand") + "," +
+                externalEval.get("confmat") + "\n";
         System.out.println(sb);
     }
 }
