@@ -19,11 +19,10 @@ public class RunWrapperEval {
 
         double silhouette = evaluation.getSilhouette(clusterAssignmet);
         double sdbw = evaluation.getSdbw(clusterAssignmet);
-        Map<String, String> externalEval = evaluation.getExternalEvaluation(clusterAssignmet);
+        Map<String, String> ev = evaluation.getExternalEvaluation(clusterAssignmet);
 
-        String sb = "1000,1000,0.9,0.5,animals_relational,," + evaluation.getDistanceFunction() + "," + k + "," +
-                silhouette + "," + sdbw + "," + externalEval.get("purity") + "," + externalEval.get("rand") + "," +
-                externalEval.get("confmat") + "\n";
-        System.out.println(sb);
+        String result = String.join(" , ", String.valueOf(silhouette), String.valueOf(sdbw), ev.get("purity"),
+                ev.get("rand"), ev.get("macro-precision"), ev.get("macro-recall"), ev.get("macro-f1"), ev.get("confmat"));
+        System.out.println(result);
     }
 }

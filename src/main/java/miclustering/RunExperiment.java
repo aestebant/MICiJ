@@ -84,15 +84,21 @@ public class RunExperiment {
                         ClassEvalResult cer = eval.getClassEvalResult();
                         double purity = eval.getPurity();
                         double rand = eval.getRand();
+                        double precision = eval.getMacroPrecision();
+                        double recall = eval.getMacroRecall();
+                        double f1 = eval.getMacroF1();
                         double time = ((MyClusterer)clusterer).getElapsedTime();
+
+                        String report = String.join(",", c, config, distance, d, z, String.valueOf(actualNClusters),
+                                String.valueOf(dataset.numInstances()),
+                                String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(silhouette),
+                                String.valueOf(sdbw), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
+                                String.valueOf(recall), String.valueOf(f1), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
+                                String.valueOf(time));
+
                         try {
                             reportFileWriter.flush();
-                            reportFileWriter.write(c + "," + config + "," + distance
-                                    + "," + d + "," + z + "," + actualNClusters + "," + dataset.numInstances()
-                                    + "," + clusteredBags + "," + unclusteredBags
-                                    + "," + silhouette + "," + sdbw + "," + purity + "," + rand
-                                    + "," + PrintConfusionMatrix.singleLine(cer.getConfMatrix()) + "," + time + "\n"
-                            );
+                            reportFileWriter.write(report + "\n");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -137,12 +143,12 @@ public class RunExperiment {
 
         clustering = new String[]{
 //                "MIDBSCAN",
-//                "MISimpleKMeans",
+                "MISimpleKMeans",
                 "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();
-        for (int k = 2; k <= 4; ++k) {
+        for (int k = 3; k <= 3; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
                 kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
             }
@@ -180,7 +186,7 @@ public class RunExperiment {
         try {
             reportFileWriter = new FileWriter(reportFile);
             reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,Purity,Rand index,#Confusion Matrix (a cluster by each |),#Time of Clustering\n");
+            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,Purity,Rand index,Precision,Recall,F1,#Confusion Matrix,#Time of Clustering\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

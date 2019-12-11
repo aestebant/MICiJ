@@ -39,9 +39,9 @@ public class Run {
         };
 
         String[] clustering = {
-                "MIDBSCAN",
+//                "MIDBSCAN",
 //                "MISimpleKMeans",
-//                "BAMIC",
+                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();

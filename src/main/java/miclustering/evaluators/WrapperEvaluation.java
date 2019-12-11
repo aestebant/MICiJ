@@ -2,10 +2,12 @@ package miclustering.evaluators;
 
 import miclustering.utils.PrintConfusionMatrix;
 import miclustering.utils.ProcessDataset;
+import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
 import weka.core.DistanceFunction;
 import weka.core.Instances;
 import weka.core.Utils;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -53,10 +55,21 @@ public class WrapperEvaluation {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Map<String, String> result = new HashMap<>(2);
         assert cer != null;
+        double[] precision = classEval.computePrecision(cer);
+        double[] recall = classEval.computeRecall(cer);
+        double[] f1 = classEval.computeF1(precision, recall);
+        GeometricMean gm = new GeometricMean();
+
+        Map<String, String> result = new HashMap<>(2);
         result.put("purity", String.valueOf(classEval.computePurity(cer.getConfMatrix())));
-        result.put("rand", String.valueOf(classEval.computeRandIndex(cer.getConfMatrix(), cer.getClusterToClass())));
+        result.put("rand", String.valueOf(classEval.computeRandIndex(cer)));
+        result.put("macro-precision", String.valueOf(gm.evaluate(precision)));
+        result.put("macro-recall", String.valueOf(gm.evaluate(recall)));
+        result.put("macro-f1", String.valueOf(gm.evaluate(f1)));
+        result.put("micro-precision", Arrays.toString(precision));
+        result.put("micro-recall", Arrays.toString(recall));
+        result.put("micro-f1", Arrays.toString(f1));
         result.put("confmat", PrintConfusionMatrix.singleLine(cer.getConfMatrix()));
         return result;
     }

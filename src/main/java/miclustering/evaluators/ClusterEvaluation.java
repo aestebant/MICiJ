@@ -2,6 +2,7 @@ package miclustering.evaluators;
 
 import miclustering.algorithms.MyClusterer;
 import miclustering.utils.PrintConfusionMatrix;
+import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
 import weka.clusterers.Clusterer;
 import weka.core.*;
 import weka.filters.Filter;
@@ -32,6 +33,9 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private ClassEvalResult classEvalResult;
     private double purity;
     private double rand;
+    private double[] precision;
+    private double[] recall;
+    private double[] f1;
 
     private boolean printClusterAssignments;
     private String attributeRangeString;
@@ -75,7 +79,10 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             ClassEvaluation ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
             classEvalResult = ce.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
             purity = ce.computePurity(classEvalResult.getConfMatrix());
-            rand = ce.computeRandIndex(classEvalResult.getConfMatrix(), classEvalResult.getClusterToClass());
+            rand = ce.computeRandIndex(classEvalResult);
+            precision = ce.computePrecision(classEvalResult);
+            recall = ce.computeRecall(classEvalResult);
+            f1 = ce.computeF1(precision, recall);
         }
 
     }
@@ -201,7 +208,10 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         if (classAtt > -1) {
             result.append("External validation metrics:\n");
             result.append("\tPurity: ").append(purity).append("\n");
-            result.append("\tRand index: ").append(rand);
+            result.append("\tRand index: ").append(rand).append("\n");
+            result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\n");
+            result.append("\tRecall: ").append(Arrays.toString(recall)).append("\n");
+            result.append("\tF1 measure: ").append(Arrays.toString(f1));
         }
 
         return result.toString();
@@ -250,6 +260,21 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
     public double getRand() {
         return rand;
+    }
+
+    public double getMacroPrecision() {
+        GeometricMean gm = new GeometricMean();
+        return gm.evaluate(precision);
+    }
+
+    public double getMacroRecall() {
+        GeometricMean gm = new GeometricMean();
+        return gm.evaluate(recall);
+    }
+
+    public double getMacroF1() {
+        GeometricMean gm = new GeometricMean();
+        return gm.evaluate(f1);
     }
 
     public DistanceFunction getDistanceFunction() {
