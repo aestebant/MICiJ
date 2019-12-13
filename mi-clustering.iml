@@ -40,5 +40,7 @@
     <orderEntry type="library" name="Maven: nz.ac.waikato.cms.weka:multiInstanceLearning:1.0.9" level="project" />
     <orderEntry type="library" name="Maven: nz.ac.waikato.cms.weka:citationKNN:1.0.2" level="project" />
     <orderEntry type="library" name="Maven: nz.ac.waikato.cms.weka:optics_dbScan:1.0.4" level="project" />
+    <orderEntry type="library" name="Maven: org.jgrapht:jgrapht-core:1.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.jheaps:jheaps:0.10" level="project" />
   </component>
 </module>

@@ -30,6 +30,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
     private double silhouette;
     private double sdbw;
+    private double dbcv;
     private ClassEvalResult classEvalResult;
     private double purity;
     private double rand;
@@ -74,6 +75,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         silhouette = s.computeIndex(clusterAssignments, bagsPerCluster);
         S_DbwIndex sDbw = new S_DbwIndex(processData, maxNumClusters, distFunction);
         sdbw = sDbw.computeIndex(clusterAssignments);
+        DBCV densityBCV = new DBCV(processData, distFunction, maxNumClusters, numThreads);
+        dbcv = densityBCV.computeIndex(clusterAssignments, bagsPerCluster);
 
         if (classAtt > -1) {
             ClassEvaluation ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
@@ -205,6 +208,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         result.append("Internal validation metrics:\n");
         result.append("\tSilhouette index: ").append(silhouette).append("\n");
         result.append("\tS_Dbw index: ").append(sdbw).append("\n");
+        result.append("\tDBCV: ").append(dbcv).append("\n");
         if (classAtt > -1) {
             result.append("External validation metrics:\n");
             result.append("\tPurity: ").append(purity).append("\n");
@@ -246,12 +250,16 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         return silhouette;
     }
 
-    public ClassEvalResult getClassEvalResult() {
-        return classEvalResult;
-    }
-
     public double getSdbw() {
         return sdbw;
+    }
+
+    public double getDbcv() {
+        return dbcv;
+    }
+
+    public ClassEvalResult getClassEvalResult() {
+        return classEvalResult;
     }
 
     public double getPurity() {
