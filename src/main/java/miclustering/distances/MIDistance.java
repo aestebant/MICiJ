@@ -9,7 +9,7 @@ import weka.core.neighboursearch.PerformanceStats;
 import java.util.*;
 
 public abstract class MIDistance implements DistanceFunction {
-    private Map<Set<Integer>, Double> cachedDistances = new HashMap<>();
+    private final Map<Set<Integer>, Double> cachedDistances = new HashMap<>();
 
     protected abstract double computeDistance(Instances i1, Instances i2);
 
@@ -49,7 +49,9 @@ public abstract class MIDistance implements DistanceFunction {
             //System.out.println("La caché ha funcionado");
         } else {
             distance = computeDistance(i1, i2);
-            cachedDistances.put(key, distance);
+            synchronized (cachedDistances) {
+                cachedDistances.put(key, distance);
+            }
         }
 
         if (performanceStats != null)
