@@ -13,7 +13,7 @@ public class RunPreprocess {
 //                "elephant_relational",
 //                "fox_relational",
 //                "function_relational",
-//                "musk1_relational",
+                "musk1_relational",
 //                "musk2_relational",
 //                "mutagenesis3_atoms_relational",
 //                "mutagenesis3_bonds_relational",
@@ -23,7 +23,7 @@ public class RunPreprocess {
 //                "tiger_relational",
 //                "trx_relational",
 //                "westeast_relational"
-                "animals_relational"
+//                "animals_relational"
         };
 
         MIStandardization filter = new MIStandardization();

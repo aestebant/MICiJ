@@ -14,9 +14,9 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
-                "animals_relational"
+//                "animals_relational"
 //                "component_relational",
-//                "eastwest_relational",
+                "eastwest_relational",
 //                "elephant_relational",
 //                "fox_relational",
 //                "function_relational",
