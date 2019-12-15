@@ -55,7 +55,10 @@ public class DBCV {
                     result[i] += FastMath.pow(1D / distancesMatrix[i][j], d);
                 }
             }
-            result[i] = FastMath.pow(result[i] / (bagsPerCluster[clusterIdx] - 1), -1D/d);
+            if (result[i] == 0D)
+                result[i] = Double.MAX_VALUE;
+            else
+                result[i] = FastMath.pow(result[i] / (bagsPerCluster[clusterIdx] - 1), -1D/d);
         }
         return result;
     }
@@ -75,7 +78,8 @@ public class DBCV {
             g.get(clusterIdx).addVertex(i);
             for (int j = i + 1; j < clusterAssignments.size(); ++j) {
                 if (clusterIdx == clusterAssignments.get(j)) {
-                    g.get(clusterIdx).addVertex(j);
+                    if (!g.get(clusterIdx).containsVertex(j))
+                        g.get(clusterIdx).addVertex(j);
                     WeightedEdge edge = g.get(clusterIdx).addEdge(i, j);
                     g.get(clusterIdx).setEdgeWeight(edge, mutualReachDist(coreDist, i, j));
                 }
