@@ -81,6 +81,7 @@ public class RunExperiment {
                         int unclusteredBags = eval.getUnclusteredInstances();
                         double silhouette = eval.getSilhouette();
                         double sdbw = eval.getSdbw();
+                        double dbcv = eval.getDbcv();
                         ClassEvalResult cer = eval.getClassEvalResult();
                         double purity = eval.getPurity();
                         double rand = eval.getRand();
@@ -92,7 +93,7 @@ public class RunExperiment {
                         String report = String.join(",", c, config, distance, d, z, String.valueOf(actualNClusters),
                                 String.valueOf(dataset.numInstances()),
                                 String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(silhouette),
-                                String.valueOf(sdbw), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
+                                String.valueOf(sdbw), String.valueOf(dbcv), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
                                 String.valueOf(recall), String.valueOf(f1), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
                                 String.valueOf(time));
 
@@ -186,7 +187,7 @@ public class RunExperiment {
         try {
             reportFileWriter = new FileWriter(reportFile);
             reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,Purity,Rand index,Precision,Recall,F1,#Confusion Matrix,#Time of Clustering\n");
+            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,DBCV,Purity,Rand index,Precision,Recall,F1,#Confusion Matrix,#Time of Clustering\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

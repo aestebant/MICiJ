@@ -25,7 +25,7 @@ public class RunWrapperEval {
                 "tiger_relational",
                 "trx_relational",
                 "westeast_relational",
-                "animals_relational"
+//                "animals_relational"
         };
         //String dataset = "animals_relational-z1.arff";
         String distance = "HausdorffDistance";

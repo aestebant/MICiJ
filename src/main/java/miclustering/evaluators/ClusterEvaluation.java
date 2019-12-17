@@ -2,7 +2,7 @@ package miclustering.evaluators;
 
 import miclustering.algorithms.MyClusterer;
 import miclustering.utils.PrintConfusionMatrix;
-import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.clusterers.Clusterer;
 import weka.core.*;
 import weka.filters.Filter;
@@ -13,7 +13,10 @@ import java.beans.Introspector;
 import java.beans.MethodDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Vector;
 
 public class ClusterEvaluation implements Serializable, OptionHandler, RevisionHandler {
     private Clusterer clusterer;
@@ -271,17 +274,17 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     }
 
     public double getMacroPrecision() {
-        GeometricMean gm = new GeometricMean();
+        Mean gm = new Mean();
         return gm.evaluate(precision);
     }
 
     public double getMacroRecall() {
-        GeometricMean gm = new GeometricMean();
+        Mean gm = new Mean();
         return gm.evaluate(recall);
     }
 
     public double getMacroF1() {
-        GeometricMean gm = new GeometricMean();
+        Mean gm = new Mean();
         return gm.evaluate(f1);
     }
 
