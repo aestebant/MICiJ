@@ -190,13 +190,13 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         this.startingPoints = new Instances(this.centroids);
     }
 
-    private boolean assignToCluster(Instances instances, int[] clusterAssignments, boolean updateErrors) throws Exception {
+    private boolean assignToCluster(Instances data, int[] clusterAssignments, boolean updateErrors) throws Exception {
         boolean converged = true;
 
         ExecutorService executor = Executors.newFixedThreadPool(executionSlots);
-        Collection<Callable<Integer[]>> collection = new ArrayList<>(instances.numInstances());
-        for (int i = 0; i < instances.numInstances(); ++i) {
-            collection.add(new ParallelizeAssignation(instances.get(i), i, updateErrors));
+        Collection<Callable<Integer[]>> collection = new ArrayList<>(data.numInstances());
+        for (int i = 0; i < data.numInstances(); ++i) {
+            collection.add(new ParallelizeAssignation(data.get(i), i, updateErrors));
         }
         try {
             List<Future<Integer[]>> futures = executor.invokeAll(collection);
@@ -216,33 +216,33 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
     }
 
     private class ParallelizeAssignation implements Callable<Integer[]> {
-        Instance instance;
+        Instance bag;
         int idx;
         boolean updateErrors;
-        ParallelizeAssignation(Instance instance, int idx, boolean updateErrors) {
-            this.instance = instance;
+        ParallelizeAssignation(Instance bag, int idx, boolean updateErrors) {
+            this.bag = bag;
             this.idx = idx;
             this.updateErrors = updateErrors;
         }
         @Override
         public Integer[] call() throws Exception {
-            int newCluster = clusterProcessedInstance(instance, updateErrors);
+            int newCluster = getCluster(bag, updateErrors);
             return new Integer[]{idx, newCluster};
         }
     }
 
-    private int clusterProcessedInstance(Instance instance, boolean updateErrors) {
+    private int getCluster(Instance bag, boolean updateErrors) {
         double minDist = Double.MAX_VALUE;
         int bestCluster = 0;
         for (int i = 0; i < this.numClusters; ++i) {
-            double dist = this.distFunction.distance(instance, this.centroids.get(i));
+            double dist = this.distFunction.distance(bag, this.centroids.get(i));
             if (dist < minDist) {
                 minDist = dist;
                 bestCluster = i;
             }
         }
         if (updateErrors) {
-            minDist *= minDist * instance.weight();
+            minDist *= minDist * bag.weight();
             double[] squaredErrors1 = this.squaredErrors;
             squaredErrors1[bestCluster] += minDist;
         }
@@ -310,8 +310,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
     }
 
     @Override
-    public int clusterInstance(Instance instance) {
-        return this.clusterProcessedInstance(instance, false);
+    public int clusterInstance(Instance bag) {
+        return this.getCluster(bag, false);
     }
 
     @Override
