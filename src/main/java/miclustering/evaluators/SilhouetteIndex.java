@@ -1,10 +1,13 @@
 package miclustering.evaluators;
 
 import miclustering.utils.DistancesMatrix;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.core.DistanceFunction;
 import weka.core.Instances;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class SilhouetteIndex {
     private int maxNumClusters;
@@ -22,7 +25,7 @@ public class SilhouetteIndex {
             return -1;
         int numInstances = clusterAssignments.size();
 
-        List<Double> silhouette = new ArrayList<>(numInstances);
+        double[] silhouette = new double[numInstances];
 
         for (int point = 0; point < numInstances; ++point) {
             double[] meanDistToCluster = new double[maxNumClusters];
@@ -50,13 +53,13 @@ public class SilhouetteIndex {
                 bPoint = Collections.min(possibleB);
 
             if (aPoint < bPoint)
-                silhouette.add(1 - aPoint / bPoint);
+                silhouette[point] = 1 - aPoint / bPoint;
             else if (aPoint == bPoint)
-                silhouette.add(0D);
+                silhouette[point] = 0D;
             else if (aPoint > bPoint)
-                silhouette.add(bPoint / aPoint - 1);
+                silhouette[point] = bPoint / aPoint - 1;
         }
-        OptionalDouble average = silhouette.stream().mapToDouble(a -> a).average();
-        return average.isPresent()? average.getAsDouble() : -1;
+        Mean mean = new Mean();
+        return mean.evaluate(silhouette);
     }
 }

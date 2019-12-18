@@ -4,8 +4,9 @@ import miclustering.evaluators.WrappedEvaluation;
 import miclustering.utils.ProcessDataset;
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 public class RunWrappedEval {
     public static void main(String[] args) {
@@ -39,8 +40,8 @@ public class RunWrappedEval {
             }
             int k = data.numDistinctValues(2);
 
-            Vector<Integer> clusterAssignmet = new Vector<>(resFromJCLEC.length);
-            for (int value : resFromJCLEC) clusterAssignmet.addElement(value);
+            List<Integer> clusterAssignmet = new ArrayList<>(resFromJCLEC.length);
+            for (int value : resFromJCLEC) clusterAssignmet.add(value);
 
             WrappedEvaluation evaluation = new WrappedEvaluation("datasets/" + dataset + ".arff", distance, distanceConfig, k);
 
