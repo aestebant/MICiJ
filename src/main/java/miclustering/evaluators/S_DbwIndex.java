@@ -8,10 +8,7 @@ import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -28,7 +25,7 @@ public class S_DbwIndex {
         this.distanceFunction = distanceFunction;
     }
 
-    public double computeIndex(Vector<Integer> clusterAssignments) {
+    public double computeIndex(List<Integer> clusterAssignments) {
         int actualNumClusters = Collections.max(clusterAssignments) + 1;
         if (actualNumClusters == 0)
             return Double.POSITIVE_INFINITY;
@@ -84,7 +81,7 @@ public class S_DbwIndex {
     /**
      * Inter-cluster density
      */
-    private double computeDens_Bw(Vector<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
+    private double computeDens_Bw(List<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
         int numInstances = instances.numInstances();
 
         double stdev = l2NormClusters.values().stream().mapToDouble(Double::doubleValue).sum();
@@ -128,7 +125,7 @@ public class S_DbwIndex {
      * Not valid for distribution-based miclustering.distances
      */
     @SuppressWarnings("unused")
-    private double computeDens_BwSingleInstance(Vector<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
+    private double computeDens_BwSingleInstance(List<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
         int numAttributes = instances.get(0).relationalValue(1).numAttributes();
         int numInstances = instances.numInstances();
 

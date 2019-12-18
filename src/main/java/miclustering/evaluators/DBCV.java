@@ -27,7 +27,7 @@ public class DBCV {
         distancesMatrix = dm.compute(instances, numThreads, distanceFunction);
     }
 
-    public double computeIndex(Vector<Integer> clusterAssignments, int[] bagsPerCluster) {
+    public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         double[] coreDist = allPointsCoreDist(clusterAssignments, bagsPerCluster);
         Map<Integer, SpanningTreeAlgorithm.SpanningTree<WeightedEdge>> mst = mutualReachDistMST(clusterAssignments, coreDist);
         double[][] dspc = densitySeparation(mst, coreDist);
@@ -45,7 +45,7 @@ public class DBCV {
         return mean.evaluate(vc, weights);
     }
 
-    private double[] allPointsCoreDist(Vector<Integer> clusterAssignments, int[] bagsPerCluster) {
+    private double[] allPointsCoreDist(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int d = instances.get(0).relationalValue(1).numAttributes();
         double[] result = new double[clusterAssignments.size()];
         for (int i = 0; i < clusterAssignments.size(); ++i) {
@@ -68,7 +68,7 @@ public class DBCV {
         return max.evaluate(new double[]{coreDist[bag1Idx], coreDist[bag2Idx], distancesMatrix[bag1Idx][bag2Idx]});
     }
 
-    private Map<Integer, SpanningTreeAlgorithm.SpanningTree<WeightedEdge>> mutualReachDistMST(Vector<Integer> clusterAssignments, double[] coreDist) {
+    private Map<Integer, SpanningTreeAlgorithm.SpanningTree<WeightedEdge>> mutualReachDistMST(List<Integer> clusterAssignments, double[] coreDist) {
         Map<Integer, Graph<Integer, WeightedEdge>> g = new HashMap<>(maxNumClusters);
         for (int i = 0; i < maxNumClusters; ++i) {
             g.put(i, new SimpleWeightedGraph<>(WeightedEdge.class));

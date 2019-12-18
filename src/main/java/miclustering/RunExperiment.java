@@ -1,6 +1,6 @@
 package miclustering;
 
-import miclustering.algorithms.MyClusterer;
+import miclustering.algorithms.MIClusterer;
 import miclustering.evaluators.ClassEvalResult;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
@@ -75,7 +75,7 @@ public class RunExperiment {
                             e.printStackTrace();
                         }
 
-                        String distance = ((MyClusterer)clusterer).getDistanceFunction().toString();
+                        String distance = ((MIClusterer)clusterer).getDistanceFunction().toString();
                         int actualNClusters = eval.getActualNumClusters();
                         int clusteredBags = dataset.numInstances()-eval.getUnclusteredInstances();
                         int unclusteredBags = eval.getUnclusteredInstances();
@@ -88,7 +88,7 @@ public class RunExperiment {
                         double precision = eval.getMacroPrecision();
                         double recall = eval.getMacroRecall();
                         double f1 = eval.getMacroF1();
-                        double time = ((MyClusterer)clusterer).getElapsedTime();
+                        double time = ((MIClusterer)clusterer).getElapsedTime();
 
                         String report = String.join(",", c, config, distance, d, z, String.valueOf(actualNClusters),
                                 String.valueOf(dataset.numInstances()),

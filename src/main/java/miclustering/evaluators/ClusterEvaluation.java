@@ -1,6 +1,6 @@
 package miclustering.evaluators;
 
-import miclustering.algorithms.MyClusterer;
+import miclustering.algorithms.MIClusterer;
 import miclustering.utils.PrintConfusionMatrix;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.clusterers.Clusterer;
@@ -13,17 +13,14 @@ import java.beans.Introspector;
 import java.beans.MethodDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Vector;
+import java.util.*;
 
 public class ClusterEvaluation implements Serializable, OptionHandler, RevisionHandler {
     private Clusterer clusterer;
     private DistanceFunction distFunction;
     private Instances instances;
 
-    private Vector<Integer> clusterAssignments;
+    private List<Integer> clusterAssignments;
     private int[] bagsPerCluster;
     private int unclusteredInstances;
     private int actualNumClusters;
@@ -52,7 +49,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
         setClass(data);
         instances = data;
-        distFunction = ((MyClusterer) clusterer).getDistanceFunction();
+        distFunction = ((MIClusterer) clusterer).getDistanceFunction();
 
         Instances processData;
         if (classAtt > -1) {
@@ -127,7 +124,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             e.printStackTrace();
         }
         bagsPerCluster = new int[maxNumClusters];
-        clusterAssignments = new Vector<>(instances.numInstances());
+        clusterAssignments = new ArrayList<>(instances.numInstances());
         for (Instance i : instances) {
             try {
                 int clusterIdx = clusterer.clusterInstance(i);

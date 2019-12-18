@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-public class MIDBSCAN extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
+public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     private double epsilon = 0.9;
     private int minPoints = 6;
     private int nThreads = 1;

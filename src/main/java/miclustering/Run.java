@@ -1,6 +1,6 @@
 package miclustering;
 
-import miclustering.algorithms.MyClusterer;
+import miclustering.algorithms.MIClusterer;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
 import miclustering.utils.ProcessDataset;
@@ -63,7 +63,7 @@ public class Run {
                     Clusterer clusterer = LoadByName.clusterer("miclustering.algorithms." + c);
 
                     try {
-                        ((MyClusterer) clusterer).setOptions(Utils.splitOptions(options.get(c)));
+                        ((MIClusterer) clusterer).setOptions(Utils.splitOptions(options.get(c)));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

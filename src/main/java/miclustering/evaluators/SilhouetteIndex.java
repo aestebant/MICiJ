@@ -16,7 +16,7 @@ public class SilhouetteIndex {
         distances = dm.compute(instances, numThreads, distanceFunction);
     }
 
-    public double computeIndex(Vector<Integer> clusterAssignments, int[] bagsPerCluster) {
+    public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int actualNumClusters = Collections.max(clusterAssignments) + 1;
         if (actualNumClusters == 0)
             return -1;

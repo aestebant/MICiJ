@@ -1,13 +1,13 @@
 package miclustering;
 
-import miclustering.evaluators.WrapperEvaluation;
+import miclustering.evaluators.WrappedEvaluation;
 import miclustering.utils.ProcessDataset;
 import weka.core.Instances;
 
 import java.util.Map;
 import java.util.Vector;
 
-public class RunWrapperEval {
+public class RunWrappedEval {
     public static void main(String[] args) {
         String[] datasets = {
                 "component_relational",
@@ -42,7 +42,7 @@ public class RunWrapperEval {
             Vector<Integer> clusterAssignmet = new Vector<>(resFromJCLEC.length);
             for (int value : resFromJCLEC) clusterAssignmet.addElement(value);
 
-            WrapperEvaluation evaluation = new WrapperEvaluation("datasets/" + dataset + ".arff", distance, distanceConfig, k);
+            WrappedEvaluation evaluation = new WrappedEvaluation("datasets/" + dataset + ".arff", distance, distanceConfig, k);
 
             double dbcv = evaluation.getDBCV(clusterAssignmet);
             double silhouette = evaluation.getSilhouette(clusterAssignmet);

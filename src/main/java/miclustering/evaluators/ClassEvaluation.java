@@ -4,7 +4,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.Arrays;
-import java.util.Vector;
+import java.util.List;
 
 public class ClassEvaluation {
     private Instances instances;
@@ -17,7 +17,7 @@ public class ClassEvaluation {
         this.numClasses = numClasses;
     }
 
-    public ClassEvalResult computeConfusionMatrix(Vector<Integer> clusterAssignments, int[] bagsPerCluster) throws Exception {
+    public ClassEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) throws Exception {
         int[][] confMatrix = new int[maxNumClusters][numClasses];
         for(int i = 0; i < clusterAssignments.size(); ++i) {
             Instance instance = instances.get(i);

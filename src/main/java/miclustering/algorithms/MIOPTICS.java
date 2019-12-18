@@ -20,7 +20,7 @@ import java.io.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
-public class MIOPTICS extends AbstractClusterer implements MyClusterer, OptionHandler, TechnicalInformationHandler {
+public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     static final long serialVersionUID = 274552680222105221L;
     private double epsilon = 0.9D;
     private int minPoints = 6;

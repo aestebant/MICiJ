@@ -7,12 +7,9 @@ import weka.core.DistanceFunction;
 import weka.core.Instances;
 import weka.core.Utils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
-public class WrapperEvaluation {
+public class WrappedEvaluation {
     private DistanceFunction distanceFunction;
     private SilhouetteIndex silhouette;
     private S_DbwIndex sdbw;
@@ -20,7 +17,7 @@ public class WrapperEvaluation {
     private ClassEvaluation classEval;
     private int maxNumClusters;
 
-    public WrapperEvaluation(String datasetPath, String distanceClass, String distanceConfig, int maxNumClusters) {
+    public WrappedEvaluation(String datasetPath, String distanceClass, String distanceConfig, int maxNumClusters) {
         Instances dataset = ProcessDataset.readArff(datasetPath);
         dataset.setClassIndex(2);
         try {
@@ -41,21 +38,21 @@ public class WrapperEvaluation {
         return distanceFunction;
     }
 
-    public double getSilhouette(Vector<Integer> clusterAssignments) {
+    public double getSilhouette(List<Integer> clusterAssignments) {
         int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
         return silhouette.computeIndex(clusterAssignments, bagsPerCluster);
     }
 
-    public double getSdbw(Vector<Integer> clusterAssignments) {
+    public double getSdbw(List<Integer> clusterAssignments) {
         return sdbw.computeIndex(clusterAssignments);
     }
 
-    public double getDBCV(Vector<Integer> clusterAssignments) {
+    public double getDBCV(List<Integer> clusterAssignments) {
         int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
         return dbcv.computeIndex(clusterAssignments, bagsPerCluster);
     }
 
-    public Map<String, String> getExternalEvaluation(Vector<Integer> clusterAssignments) {
+    public Map<String, String> getExternalEvaluation(List<Integer> clusterAssignments) {
         int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
         ClassEvalResult cer = null;
         try {
@@ -85,7 +82,7 @@ public class WrapperEvaluation {
         return result;
     }
 
-    private int[] countBagsPerCluster(Vector<Integer> clusterAssignments, int maxNumClusters) {
+    private int[] countBagsPerCluster(List<Integer> clusterAssignments, int maxNumClusters) {
         int[] instancesPerCluster = new int[maxNumClusters];
         for (Integer classIdx : clusterAssignments) {
             instancesPerCluster[classIdx]++;
