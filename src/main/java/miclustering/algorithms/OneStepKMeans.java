@@ -166,7 +166,7 @@ public class OneStepKMeans {
         return distances;
     }
 
-    private class ResultAssignation {
+    private static class ResultAssignation {
         int bagId;
         double[] distances;
 

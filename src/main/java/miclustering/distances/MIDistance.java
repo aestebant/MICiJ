@@ -49,10 +49,9 @@ public abstract class MIDistance implements DistanceFunction {
             //System.out.println("La caché ha funcionado");
         } else {
             distance = computeDistance(i1, i2);
-            /*synchronized (cachedDistances) {
+            synchronized (cachedDistances) {
                 cachedDistances.put(key, distance);
-            }*/
-            cachedDistances.put(key, distance);
+            }
         }
 
         if (performanceStats != null)

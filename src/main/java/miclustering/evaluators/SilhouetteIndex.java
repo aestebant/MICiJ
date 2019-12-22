@@ -43,7 +43,7 @@ public class SilhouetteIndex {
             if (clusterAssignments.get(point) != -1)
                 aPoint = meanDistToCluster[clusterAssignments.get(point)];
 
-            List<Double> possibleB = new ArrayList<>(maxNumClusters -1);
+            List<Double> possibleB = new ArrayList<>(maxNumClusters - 1);
             for (int j = 0; j < maxNumClusters; ++j) {
                 if (j != clusterAssignments.get(point))
                     possibleB.add(meanDistToCluster[j]);
