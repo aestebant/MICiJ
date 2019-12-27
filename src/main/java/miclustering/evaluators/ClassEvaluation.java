@@ -1,5 +1,6 @@
 package miclustering.evaluators;
 
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -90,46 +91,90 @@ public class ClassEvaluation {
     }
 
     public double[] computePrecision(ClassEvalResult cer) {
-        int[] classToCluster = cer.getClusterToClass();
+        int[] clusterToClass = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
-        double[] precision = new double[maxNumClusters];
-        for (int i = 0; i < maxNumClusters; ++i) {
-            if (classToCluster[i] > -1) {
-                int tp = confMatrix[i][classToCluster[i]];
+        double[] precision = new double[clusterToClass.length - 1];
+        for (int i = 0; i < confMatrix.length; ++i) {
+            if (clusterToClass[i] > -1) {
+                int tp = confMatrix[i][clusterToClass[i]];
                 int fp = 0;
                 for (int j = 0; j < confMatrix[i].length; ++j) {
-                    if (j != classToCluster[i])
+                    if (j != clusterToClass[i])
                         fp += confMatrix[i][j];
                 }
-                precision[i] = (double) tp / (tp+fp);
+                precision[clusterToClass[i]] = (double) tp / (tp+fp);
             }
         }
         return precision;
     }
 
     public double[] computeRecall(ClassEvalResult cer) {
-        int[] classToCluster = cer.getClusterToClass();
+        int[] clusterToClass = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
-        double[] recall = new double[maxNumClusters];
-        for (int i = 0; i < maxNumClusters; ++i) {
-            if (classToCluster[i] > -1) {
-                int tp = confMatrix[i][classToCluster[i]];
+        double[] recall = new double[clusterToClass.length - 1];
+        for (int i = 0; i < confMatrix.length; ++i) {
+            if (clusterToClass[i] > -1) {
+                int tp = confMatrix[i][clusterToClass[i]];
                 int fn = 0;
                 for (int j = 0; j < confMatrix.length; ++j) {
                     if (j != i)
-                        fn += confMatrix[j][classToCluster[i]];
+                        fn += confMatrix[j][clusterToClass[i]];
                 }
-                recall[i] = (double) tp / (tp + fn);
+                recall[clusterToClass[i]] = (double) tp / (tp + fn);
             }
         }
         return recall;
     }
 
-    public double[] computeF1(double[] precision, double[] recall) {
-        double[] f1 = new double[maxNumClusters];
-        for (int i = 0; i < maxNumClusters; ++i){
-            f1[i] = 2 * (precision[i] * recall[i]) / (precision[i] + recall[i]);
+    public double[] computeF1(ClassEvalResult cer, double[] precision, double[] recall) {
+        int[] clusterToClass = cer.getClusterToClass();
+        double[] f1 = new double[precision.length];
+        for (int i = 0; i < precision.length; ++i){
+            if (clusterToClass[i] > -1)
+                f1[clusterToClass[i]] = 2 * (precision[clusterToClass[i]] * recall[clusterToClass[i]]) / (precision[clusterToClass[i]] + recall[clusterToClass[i]]);
         }
         return f1;
+    }
+
+    public double[] computeSpecificity(ClassEvalResult cer) {
+        int[] clusterToClass = cer.getClusterToClass();
+        int[][] confMatrix = cer.getConfMatrix();
+        double[] specificity = new double[clusterToClass.length - 1];
+        for (int i = 0; i < confMatrix.length; ++i) {
+            if (clusterToClass[i] > -1) {
+                int tn = 0;
+                for (int j = 0; j < confMatrix.length; ++j) {
+                    if (j != i) {
+                        for (int k = 0; k < confMatrix[j].length; ++k) {
+                            if (k != clusterToClass[i])
+                                tn += confMatrix[j][k];
+                        }
+                    }
+                }
+                int fp = 0;
+                for (int j = 0; j < confMatrix[i].length; ++j) {
+                    if (j != clusterToClass[i])
+                        fp += confMatrix[i][j];
+                }
+                specificity[clusterToClass[i]] = (double) tn / (tn + fp);
+            }
+        }
+        return specificity;
+    }
+
+    public double getMacroMeasure(ClassEvalResult cer, double[] measure, List<Integer> clusterAssignments, int[] bagsPerCluster) {
+        int[] clusterToClass = cer.getClusterToClass();
+        if (measure.length == 2)
+            return measure[1];
+        else {
+            double[] weights = new double[clusterToClass.length - 1];
+            for (int i = 0; i < clusterToClass.length - 1; ++i) {
+                if (clusterToClass[i] > -1) {
+                    weights[clusterToClass[i]] = (double) bagsPerCluster[i] / clusterAssignments.size();
+                }
+            }
+            Mean mean = new Mean();
+            return mean.evaluate(measure, weights);
+        }
     }
 }

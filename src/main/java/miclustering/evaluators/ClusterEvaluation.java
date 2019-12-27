@@ -2,7 +2,6 @@ package miclustering.evaluators;
 
 import miclustering.algorithms.MIClusterer;
 import miclustering.utils.PrintConfusionMatrix;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.clusterers.Clusterer;
 import weka.core.*;
 import weka.filters.Filter;
@@ -37,10 +36,12 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private double[] precision;
     private double[] recall;
     private double[] f1;
+    private double[] specificity;
 
     private boolean printClusterAssignments;
     private String attributeRangeString;
     private int numThreads;
+    private ClassEvaluation ce;
 
     public void evaluateClusterer(Instances data) throws Exception {
         if (clusterer == null) {
@@ -79,13 +80,14 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         dbcv = densityBCV.computeIndex(clusterAssignments, bagsPerCluster);
 
         if (classAtt > -1) {
-            ClassEvaluation ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
+            ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
             classEvalResult = ce.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
             purity = ce.computePurity(classEvalResult.getConfMatrix());
             rand = ce.computeRandIndex(classEvalResult);
             precision = ce.computePrecision(classEvalResult);
             recall = ce.computeRecall(classEvalResult);
-            f1 = ce.computeF1(precision, recall);
+            f1 = ce.computeF1(classEvalResult, precision, recall);
+            specificity = ce.computeSpecificity(classEvalResult);
         }
 
     }
@@ -154,6 +156,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
         StringBuilder result = new StringBuilder();
 
+        result.append("Algorithm: ").append(clusterer.getClass().getName()).append("\n");
+        result.append("Dataset: ").append(instances.relationName()).append("\n");
         result.append("Evaluation\n----------------\n");
 
         int maxNumClusters = bagsPerCluster.length;
@@ -177,7 +181,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
         if (classAtt > -1) {
             result.append("Class attribute: \"").append(instances.classAttribute().name()).append("\"\n");
-            result.append("Classes to Clusters:\n");
+            result.append("Confusion Matrix:\n");
             result.append(PrintConfusionMatrix.severalLines(classEvalResult, bagsPerCluster, instances.classAttribute()));
 
             if (totalClusteredInstances > 0) {
@@ -213,9 +217,10 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             result.append("External validation metrics:\n");
             result.append("\tPurity: ").append(purity).append("\n");
             result.append("\tRand index: ").append(rand).append("\n");
-            result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\n");
-            result.append("\tRecall: ").append(Arrays.toString(recall)).append("\n");
-            result.append("\tF1 measure: ").append(Arrays.toString(f1));
+            result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, precision, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tRecall: ").append(Arrays.toString(recall)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, recall, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tF1 measure: ").append(Arrays.toString(f1)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, f1, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tSpecificity: ").append(Arrays.toString(specificity)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, specificity, clusterAssignments, bagsPerCluster));
         }
 
         return result.toString();
@@ -271,18 +276,19 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     }
 
     public double getMacroPrecision() {
-        Mean gm = new Mean();
-        return gm.evaluate(precision);
+        return ce.getMacroMeasure(classEvalResult, precision, clusterAssignments, bagsPerCluster);
     }
 
     public double getMacroRecall() {
-        Mean gm = new Mean();
-        return gm.evaluate(recall);
+        return ce.getMacroMeasure(classEvalResult, recall, clusterAssignments, bagsPerCluster);
     }
 
     public double getMacroF1() {
-        Mean gm = new Mean();
-        return gm.evaluate(f1);
+        return ce.getMacroMeasure(classEvalResult, f1, clusterAssignments, bagsPerCluster);
+    }
+
+    public double getSpecificity() {
+        return ce.getMacroMeasure(classEvalResult, specificity, clusterAssignments, bagsPerCluster);
     }
 
     public DistanceFunction getDistanceFunction() {

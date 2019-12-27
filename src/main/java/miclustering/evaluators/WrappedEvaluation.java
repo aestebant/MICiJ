@@ -2,12 +2,14 @@ package miclustering.evaluators;
 
 import miclustering.utils.PrintConfusionMatrix;
 import miclustering.utils.ProcessDataset;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import weka.core.DistanceFunction;
 import weka.core.Instances;
 import weka.core.Utils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class WrappedEvaluation {
     private DistanceFunction distanceFunction;
@@ -63,22 +65,22 @@ public class WrappedEvaluation {
         assert cer != null;
         double[] precision = classEval.computePrecision(cer);
         double[] recall = classEval.computeRecall(cer);
-        double[] f1 = classEval.computeF1(precision, recall);
-        Mean mean = new Mean();
-        double[] weights = new double[bagsPerCluster.length];
-        for (int i = 0; i < weights.length; ++i)
-            weights[i] = (double) bagsPerCluster[i] / clusterAssignments.size();
+        double[] f1 = classEval.computeF1(cer, precision, recall);
+        double[] specificity = classEval.computeSpecificity(cer);
 
         Map<String, String> result = new HashMap<>(2);
+        result.put("confmat", PrintConfusionMatrix.singleLine(cer.getConfMatrix()));
         result.put("purity", String.valueOf(classEval.computePurity(cer.getConfMatrix())));
         result.put("rand", String.valueOf(classEval.computeRandIndex(cer)));
-        result.put("macro-precision", String.valueOf(mean.evaluate(precision, weights)));
-        result.put("macro-recall", String.valueOf(mean.evaluate(recall, weights)));
-        result.put("macro-f1", String.valueOf(mean.evaluate(f1, weights)));
         result.put("micro-precision", Arrays.toString(precision));
         result.put("micro-recall", Arrays.toString(recall));
         result.put("micro-f1", Arrays.toString(f1));
-        result.put("confmat", PrintConfusionMatrix.singleLine(cer.getConfMatrix()));
+        result.put("micro-specificity", Arrays.toString(specificity));
+        result.put("macro-precision", String.valueOf(classEval.getMacroMeasure(cer, precision, clusterAssignments, bagsPerCluster)));
+        result.put("macro-recall", String.valueOf(classEval.getMacroMeasure(cer, recall, clusterAssignments, bagsPerCluster)));
+        result.put("macro-f1", String.valueOf(classEval.getMacroMeasure(cer, f1, clusterAssignments, bagsPerCluster)));
+        result.put("macro-specificity", String.valueOf(classEval.getMacroMeasure(cer, specificity, clusterAssignments, bagsPerCluster)));
+
         return result;
     }
 
