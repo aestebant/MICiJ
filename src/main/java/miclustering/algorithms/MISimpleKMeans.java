@@ -568,7 +568,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         if (centroids.attribute(1).isRelationValued()) {
             clustersToPrint = new Instances(centroids.get(0).relationalValue(1), numClusters);
             numAttributes = centroids.get(0).relationalValue(1).numAttributes();
-            for (int i = 0; i < numClusters; ++i) {
+            for (int i = 0; i < currentNClusters; ++i) {
                 double[] mean = new double[numAttributes];
                 for (int j = 0; j < numAttributes; ++j) {
                     mean[j] = centroids.get(i).relationalValue(1).meanOrMode(j);
