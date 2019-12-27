@@ -19,7 +19,7 @@ import java.util.*;
 
 public class RunExperiment {
 
-    private static String[] datasets;
+    private static String[] dataset;
     private static String[] standardization;
     private static String[] clustering;
     private static Map<String, List<String>> clusterConfig;
@@ -27,7 +27,6 @@ public class RunExperiment {
     private static int nThreads = 1;
 
     private static String reportTitle;
-    private static File reportDirectory;
     private static FileWriter reportFileWriter;
 
     public static void main(String[] args) {
@@ -47,12 +46,12 @@ public class RunExperiment {
         for (Map.Entry<String, List<String>> e: clusterConfig.entrySet()) {
             nConfigs += e.getValue().size();
         }
-        int totalIterations = datasets.length * standardization.length * nConfigs;
+        int totalIterations = dataset.length * standardization.length * nConfigs;
         int currentIteration = 0;
 
-        for (String d : datasets) {
-            for (String z : standardization) {
-                for (String c : clustering) {
+        for (String c : clustering) {
+            for (String d : dataset) {
+                for (String z : standardization) {
                     List<String> configs = clusterConfig.get(c);
                     for (String config : configs) {
                         currentIteration++;
@@ -88,22 +87,21 @@ public class RunExperiment {
                         double precision = eval.getMacroPrecision();
                         double recall = eval.getMacroRecall();
                         double f1 = eval.getMacroF1();
+                        double specificity = eval.getSpecificity();
                         double time = ((MIClusterer)clusterer).getElapsedTime();
-
-                        String report = String.join(",", c, config, distance, d, z, String.valueOf(actualNClusters),
-                                String.valueOf(dataset.numInstances()),
+                        String reportTitle = saveFullReport(clusterer, eval);
+                        String report = String.join(",", c, config, d + z, distance, String.valueOf(actualNClusters),
                                 String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(silhouette),
                                 String.valueOf(sdbw), String.valueOf(dbcv), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
-                                String.valueOf(recall), String.valueOf(f1), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
-                                String.valueOf(time));
-
+                                String.valueOf(recall), String.valueOf(f1), String.valueOf(specificity), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
+                                String.valueOf(time), reportTitle);
                         try {
                             reportFileWriter.flush();
                             reportFileWriter.write(report + "\n");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        saveFullReport(clusterer, eval, currentIteration);
+
                     }
                 }
             }
@@ -117,23 +115,23 @@ public class RunExperiment {
     }
 
     private static void setExperiments() {
-        datasets = new String[]{
+        dataset = new String[]{
 //                "component_relational",
 //                "eastwest_relational",
-//                "elephant_relational",
-//                "fox_relational",
+                "elephant_relational",
+                "fox_relational",
+                "tiger_relational",
+                "mutagenesis3_atoms_relational",
+                "mutagenesis3_bonds_relational",
+                "mutagenesis3_chains_relational",
 //                "function_relational",
-//                "musk1_relational",
-//                "musk2_relational",
-//                "mutagenesis3_atoms_relational",
-//                "mutagenesis3_bonds_relational",
-//                "mutagenesis3_chains_relational",
+                "musk1_relational",
+                "musk2_relational",
 //                "process_relational",
 //                "suramin_relational",
-//                "tiger_relational",
 //                "trx_relational",
 //                "westeast_relational",
-                "animals_relational"
+//                "animals_relational"
         };
 
         standardization = new String[]{
@@ -149,7 +147,7 @@ public class RunExperiment {
         };
 
         List<String> kMeansConfig = new ArrayList<>();
-        for (int k = 3; k <= 3; ++k) {
+        for (int k = 2; k <= 2; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
                 kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
             }
@@ -166,7 +164,7 @@ public class RunExperiment {
         clusterConfig = new HashMap<>();
         clusterConfig.put("MISimpleKMeans", kMeansConfig);
         clusterConfig.put("BAMIC", kMeansConfig);
-        clusterConfig.put("MIDBSCAN", dbscanConfig);
+//        clusterConfig.put("MIDBSCAN", dbscanConfig);
     }
 
     private static void setSaveResults() {
@@ -174,28 +172,34 @@ public class RunExperiment {
         Date date = new Date(System.currentTimeMillis());
         String dateString = dateFormat.format(date);
         String actualReportTitle = reportTitle + "_" + dateString;
-        reportDirectory = new File(actualReportTitle);
-        if (!reportDirectory.mkdir()) {
-            throw new RuntimeException("Error creating report directory");
-        }
-        File reportFile = new File(actualReportTitle + ".report.csv");
-        System.out.println(reportFile.getAbsoluteFile().getParent());
-        File parentDirectory = new File(reportFile.getAbsoluteFile().getParent());
-        if (!parentDirectory.exists() && !parentDirectory.mkdirs()) {
+
+        File reportFile = new File(actualReportTitle + ".final.csv");
+        File reportDirectory = new File(reportFile.getParent());
+        if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
             throw new RuntimeException("Error creating report directory");
         }
         try {
             reportFileWriter = new FileWriter(reportFile);
             reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Distance Function,Dataset,Standardization,#Clusters,#Bags,#Clusterd bags,#Unclustered bags,Silhouette index,S_Dbw index,DBCV,Purity,Rand index,Precision,Recall,F1,#Confusion Matrix,#Time of Clustering\n");
+            reportFileWriter.write(dateString + "\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            reportFileWriter = new FileWriter(reportFile);
+            reportFileWriter.flush();
+            reportFileWriter.write("Algorithm,Configuration,Dataset,Distance Function,Clusters,Clusterd bags,Unclustered bags,Silhouette,S_Dbw,DBCV,Purity,Rand index,Precision,Recall,F1,Specificity,Conf Matrix,Time,Report\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void saveFullReport(Clusterer clusterer, ClusterEvaluation evaluation, int currentIteration) {
-        String filename = "experiment_" + currentIteration + ".txt";
-        File file = new File(reportDirectory, filename);
+    private static String saveFullReport(Clusterer clusterer, ClusterEvaluation evaluation) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        Date date = new Date(System.currentTimeMillis());
+        String dateString = dateFormat.format(date);
+        String actualReportTitle = reportTitle + "_" + dateString + ".report.txt";
+        File file = new File(actualReportTitle);
         FileWriter filewriter;
         try {
             filewriter = new FileWriter(file);
@@ -206,5 +210,6 @@ public class RunExperiment {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return actualReportTitle;
     }
 }
