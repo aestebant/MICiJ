@@ -11,22 +11,22 @@ import java.util.Map;
 public class RunWrappedEval {
     public static void main(String[] args) {
         String[] datasets = {
-                "component_relational",
-                "eastwest_relational",
+//                "component_relational",
+//                "eastwest_relational",
                 "elephant_relational",
-                "fox_relational",
-                "function_relational",
-                "musk1_relational",
-                "musk2_relational",
-                "mutagenesis3_atoms_relational",
-                "mutagenesis3_bonds_relational",
-                "mutagenesis3_chains_relational",
-                "process_relational",
-                "suramin_relational",
-                "tiger_relational",
-                "trx_relational",
-                "westeast_relational",
-//                "animals_relational"
+//                "fox_relational",
+//                "function_relational",
+//                "musk1_relational",
+//                "musk2_relational",
+//                "mutagenesis3_atoms_relational",
+//                "mutagenesis3_bonds_relational",
+//                "mutagenesis3_chains_relational",
+//                "process_relational",
+//                "suramin_relational",
+//                "tiger_relational",
+//                "trx_relational",
+//                "westeast_relational",
+////                "animals_relational"
         };
         //String dataset = "animals_relational-z1.arff";
         String distance = "HausdorffDistance";
@@ -51,7 +51,7 @@ public class RunWrappedEval {
             Map<String, String> ev = evaluation.getExternalEvaluation(clusterAssignmet);
 
             String result = String.join(" , ", String.valueOf(dbcv), String.valueOf(silhouette), String.valueOf(sdbw), ev.get("purity"),
-                    ev.get("rand"), ev.get("macro-precision"), ev.get("macro-recall"), ev.get("macro-f1"), ev.get("confmat"));
+                    ev.get("rand"), ev.get("macro-precision"), ev.get("macro-recall"), ev.get("macro-f1"), ev.get("macro-specificity"), ev.get("confmat"));
             System.out.println(result);
         }
     }
