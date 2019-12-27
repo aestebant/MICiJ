@@ -4,6 +4,8 @@ import miclustering.evaluators.ClassEvalResult;
 import weka.core.Attribute;
 import weka.core.Utils;
 
+import java.util.Collections;
+
 public class PrintConfusionMatrix {
     public static String singleLine(int[][] confMat) {
         int nClusters = confMat.length;
@@ -19,7 +21,7 @@ public class PrintConfusionMatrix {
         return result.toString();
     }
 
-    public static String severalLines(ClassEvalResult classEvalResult, int[] bagsPerCluster, Attribute classAtt) {
+    public static String severalLines(ClassEvalResult cer, int[] bagsPerCluster, Attribute classAtt) {
         int maxNumClusters = bagsPerCluster.length;
         int actualNumClusters = maxNumClusters;
         for (int value : bagsPerCluster) {
@@ -32,26 +34,26 @@ public class PrintConfusionMatrix {
         int maxVal = 0;
         for (int i = 0; i < maxNumClusters; ++i) {
             for (int j = 0; j < classAtt.numValues(); ++j) {
-                if (classEvalResult.getConfMatrix()[i][j] > maxVal) {
-                    maxVal = classEvalResult.getConfMatrix()[i][j];
+                if (cer.getConfMatrix()[i][j] > maxVal) {
+                    maxVal = cer.getConfMatrix()[i][j];
                 }
             }
         }
-        int Cwidth = 1 + Math.max((int) (Math.log(maxVal) / Math.log(10D)), (int) (Math.log(actualNumClusters) / Math.log(10D)));
+        int width = 1 + Math.max((int) (Math.log(maxVal) / Math.log(10D)), (int) (Math.log(actualNumClusters) / Math.log(10D)));
+
+        for (int i = 0; i < nClasses; ++i) {
+            matrix.append(" ").append(String.format("%1$" + width + "s", classAtt.value(i)));
+        }
+        matrix.append(" <- real classes\n");
+        matrix.append(String.join("", Collections.nCopies(matrix.length(), "-"))).append("\n");
+
 
         for (int i = 0; i < maxNumClusters; ++i) {
             if (bagsPerCluster[i] > 0) {
-                matrix.append(" ").append(Utils.doubleToString(i, Cwidth, 0));
+                for (int j = 0; j < nClasses; ++j)
+                    matrix.append(" ").append(Utils.doubleToString(cer.getConfMatrix()[i][j], width, 0));
+                matrix.append(" | predicted cluster: ").append(i).append("\n");
             }
-        }
-        matrix.append("  <-- assigned to cluster\n");
-
-        for (int i = 0; i < nClasses; ++i) {
-            for (int j = 0; j < maxNumClusters; ++j) {
-                if (bagsPerCluster[j] > 0)
-                    matrix.append(" ").append(Utils.doubleToString(classEvalResult.getConfMatrix()[j][i], Cwidth, 0));
-            }
-            matrix.append(" | ").append(classAtt.value(i)).append("\n");
         }
         return matrix.toString();
     }
