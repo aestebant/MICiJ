@@ -19,7 +19,7 @@ public class ClassEvaluation {
         this.numClasses = numClasses;
     }
 
-    public ClassEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) throws Exception {
+    public ClassEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int[][] confMatrix = new int[maxNumClusters][numClasses];
         for(int i = 0; i < clusterAssignments.size(); ++i) {
             Instance instance = instances.get(i);
@@ -39,7 +39,7 @@ public class ClassEvaluation {
         return new ClassEvalResult(confMatrix, classToCluster);
     }
 
-    private static void mapClasses(int numClusters, int lev, int[][] counts, int[] bagsPerCluster, double[] current, double[] best, int error) throws Exception {
+    private static void mapClasses(int numClusters, int lev, int[][] counts, int[] bagsPerCluster, double[] current, double[] best, int error) {
         if (lev == numClusters) {
             if ((double) error < best[numClusters]) {
                 best[numClusters] = error;
