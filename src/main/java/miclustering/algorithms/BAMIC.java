@@ -11,24 +11,28 @@ public class BAMIC extends MISimpleKMeans {
 
     @Override
     protected void randomInit(Instances data) throws Exception {
-        this.centroids = new Instances(data, this.numClusters);
+        centroids = new HashMap<>(numClusters);
 
         Random random = new Random(this.getSeed());
         Map<DecisionTableHashKey, Integer> initialClusters = new HashMap<>();
 
+        int clusterIdx = 0;
         for (int i = data.numInstances() - 1; i >= 0; --i) {
             int bagIdx = random.nextInt(i + 1);
             DecisionTableHashKey hk = new DecisionTableHashKey(data.get(bagIdx), data.numAttributes(), true);
             if (!initialClusters.containsKey(hk)) {
-                this.centroids.add(data.get(bagIdx));
+                centroids.put(clusterIdx, data.get(bagIdx));
+                clusterIdx++;
                 initialClusters.put(hk, null);
             }
             data.swap(i, bagIdx);
-            if (this.centroids.numInstances() == this.numClusters) {
+            if (centroids.size() == numClusters) {
                 break;
             }
         }
-        this.startingPoints = new Instances(this.centroids);
+        startingPoints = new Instances(data.get(0).relationalValue(1), numClusters);
+        for (int i = 0; i < numClusters; ++i)
+            startingPoints.add(centroids.get(i));
     }
 
     @Override

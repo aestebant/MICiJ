@@ -18,8 +18,9 @@ public class OneStepKMeans {
     private Instances dataset;
     private DistanceFunction distanceFunction;
     private int numClusters;
+    private boolean checkValidSolution;
 
-    public OneStepKMeans(String datasetPath, String distanceClass, String distanceConfig, int numClusters) {
+    public OneStepKMeans(String datasetPath, String distanceClass, String distanceConfig, int numClusters, boolean checkValidSolution) {
         Instances dataset = ProcessDataset.readArff(datasetPath);
         dataset.setClassIndex(2);
         try {
@@ -29,6 +30,14 @@ public class OneStepKMeans {
         }
         this.dataset = dataset;
         this.numClusters = numClusters;
+        this.checkValidSolution = checkValidSolution;
+    }
+
+    public OneStepKMeans(Instances dataset, DistanceFunction distanceFunction, int numClusters, boolean checkValidSolution) {
+        this.dataset = dataset;
+        this.distanceFunction = distanceFunction;
+        this.numClusters = numClusters;
+        this.checkValidSolution = checkValidSolution;
     }
 
     public List<Integer> evaluate (List<Integer> clusterAssignments) {
@@ -36,7 +45,7 @@ public class OneStepKMeans {
         return assignBagsToClusters(centroids);
     }
 
-    private List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids) {
+    public List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids) {
         double[][] distances = new double[dataset.numInstances()][numClusters];
 
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -66,12 +75,14 @@ public class OneStepKMeans {
             clusterCounts[clusterIdx]++;
         }
 
-        //TODO esto puede fallar si hay más de un cluster vacío y coinciden en su bolsa más cercana.
-        for (int i = 0; i < numClusters; ++i) {
-            if (clusterCounts[i] == 0) {
-                double min = getMin.evaluate(distMatrix.getColumn(i));
-                int closer = Arrays.stream(distMatrix.getColumn(i)).boxed().collect(Collectors.toList()).indexOf(min);
-                clusterAssignments.set(closer, i);
+        if (checkValidSolution) {
+            //TODO esto puede fallar si hay más de un cluster vacío y coinciden en su bolsa más cercana.
+            for (int i = 0; i < numClusters; ++i) {
+                if (clusterCounts[i] == 0) {
+                    double min = getMin.evaluate(distMatrix.getColumn(i));
+                    int closer = Arrays.stream(distMatrix.getColumn(i)).boxed().collect(Collectors.toList()).indexOf(min);
+                    clusterAssignments.set(closer, i);
+                }
             }
         }
 
@@ -94,7 +105,7 @@ public class OneStepKMeans {
         }
     }
 
-    private double[] computeAssignation(Map<Integer, Instance> centroids, Instance bag) {
+    public double[] computeAssignation(Map<Integer, Instance> centroids, Instance bag) {
         double[] distances = new double[numClusters];
         for (int i = 0; i < this.numClusters; ++i) {
             distances[i] = distanceFunction.distance(bag, centroids.get(i));
