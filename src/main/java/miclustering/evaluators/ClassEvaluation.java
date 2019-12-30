@@ -1,6 +1,7 @@
 package miclustering.evaluators;
 
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.util.FastMath;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -66,6 +67,26 @@ public class ClassEvaluation {
                 }
             }
         }
+    }
+
+    public double computeEntropy(int[][] confMatrix, int[] bagsPerCluster) {
+        double[] clusterEntropy = new double[maxNumClusters];
+        for (int i = 0; i < maxNumClusters; ++i) {
+            if (bagsPerCluster[i] > 0) {
+                for (int j = 0; j < confMatrix[i].length; ++j) {
+                    double classificationProb = (double) confMatrix[i][j] / bagsPerCluster[i];
+                    if (classificationProb > 0)
+                        clusterEntropy[i] -= classificationProb  * FastMath.log(2, classificationProb);
+                }
+            }
+        }
+        double entropy = 0D;
+        for (int i = 0; i < maxNumClusters; ++i) {
+            if (bagsPerCluster[i] > 0) {
+                entropy += clusterEntropy[i] * ((double) bagsPerCluster[i] / instances.numInstances());
+            }
+        }
+        return entropy;
     }
 
     public double computePurity(int[][] confMatrix) {

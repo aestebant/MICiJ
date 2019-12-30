@@ -31,6 +31,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private double sdbw;
     private double dbcv;
     private ClassEvalResult classEvalResult;
+    private double entropy;
     private double purity;
     private double rand;
     private double[] precision;
@@ -82,6 +83,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         if (classAtt > -1) {
             ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
             classEvalResult = ce.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
+            entropy = ce.computeEntropy(classEvalResult.getConfMatrix(), bagsPerCluster);
             purity = ce.computePurity(classEvalResult.getConfMatrix());
             rand = ce.computeRandIndex(classEvalResult);
             precision = ce.computePrecision(classEvalResult);
@@ -215,6 +217,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         result.append("\tDBCV: ").append(dbcv).append("\n");
         if (classAtt > -1) {
             result.append("External validation metrics:\n");
+            result.append("\tEntropy: ").append(entropy).append("\n");
             result.append("\tPurity: ").append(purity).append("\n");
             result.append("\tRand index: ").append(rand).append("\n");
             result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, precision, clusterAssignments, bagsPerCluster)).append("\n");

@@ -70,6 +70,7 @@ public class WrappedEvaluation {
 
         Map<String, String> result = new HashMap<>(2);
         result.put("confmat", PrintConfusionMatrix.singleLine(cer.getConfMatrix()));
+        result.put("entropy", String.valueOf(classEval.computeEntropy(cer.getConfMatrix(), bagsPerCluster)));
         result.put("purity", String.valueOf(classEval.computePurity(cer.getConfMatrix())));
         result.put("rand", String.valueOf(classEval.computeRandIndex(cer)));
         result.put("micro-precision", Arrays.toString(precision));

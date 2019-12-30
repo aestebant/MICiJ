@@ -50,8 +50,10 @@ public class RunWrappedEval {
             double sdbw = evaluation.getSdbw(clusterAssignmet);
             Map<String, String> ev = evaluation.getExternalEvaluation(clusterAssignmet);
 
-            String result = String.join(" , ", String.valueOf(dbcv), String.valueOf(silhouette), String.valueOf(sdbw), ev.get("purity"),
+            String result = String.join(" , ", String.valueOf(silhouette), String.valueOf(sdbw), String.valueOf(dbcv), ev.get("entropy"), ev.get("purity"),
                     ev.get("rand"), ev.get("macro-precision"), ev.get("macro-recall"), ev.get("macro-f1"), ev.get("macro-specificity"), ev.get("confmat"));
+
+            System.out.println("Silhouette , SDBW , DBCV , Entropy , Purity , Rand index , Precision , Recall , F1 , Specificity , Confusion Matrix");
             System.out.println(result);
         }
     }
