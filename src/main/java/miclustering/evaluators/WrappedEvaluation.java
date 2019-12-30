@@ -13,6 +13,7 @@ import java.util.Map;
 
 public class WrappedEvaluation {
     private DistanceFunction distanceFunction;
+    private RMSStdDev rmssd;
     private SilhouetteIndex silhouette;
     private S_DbwIndex sdbw;
     private DBCV dbcv;
@@ -27,8 +28,9 @@ public class WrappedEvaluation {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        sdbw = new S_DbwIndex(dataset, maxNumClusters, distanceFunction);
         int nThreads = Runtime.getRuntime().availableProcessors();
+        rmssd = new RMSStdDev(dataset, maxNumClusters, distanceFunction, nThreads);
+        sdbw = new S_DbwIndex(dataset, maxNumClusters, distanceFunction);
         silhouette = new SilhouetteIndex(dataset, maxNumClusters, distanceFunction, nThreads);
         dbcv = new DBCV(dataset, distanceFunction, maxNumClusters, nThreads);
         int nClass = dataset.numDistinctValues(2);
@@ -38,6 +40,11 @@ public class WrappedEvaluation {
 
     public DistanceFunction getDistanceFunction() {
         return distanceFunction;
+    }
+
+    public double getRMSSD(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return rmssd.computeIndex(clusterAssignments, bagsPerCluster);
     }
 
     public double getSilhouette(List<Integer> clusterAssignments) {

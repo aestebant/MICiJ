@@ -27,6 +27,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private String classString;
     private int classAtt;
 
+    private double rmsstd;
     private double silhouette;
     private double sdbw;
     private double dbcv;
@@ -73,6 +74,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         countInstancesPerCluster(clusterer, processData);
         actualNumClusters = countRealClusters(maxNumClusters, bagsPerCluster);
 
+        RMSStdDev rmsStdDev = new RMSStdDev(processData, maxNumClusters, distFunction, numThreads);
+        rmsstd = rmsStdDev.computeIndex(clusterAssignments, bagsPerCluster);
         SilhouetteIndex s = new SilhouetteIndex(processData, maxNumClusters, distFunction, numThreads);
         silhouette = s.computeIndex(clusterAssignments, bagsPerCluster);
         S_DbwIndex sDbw = new S_DbwIndex(processData, maxNumClusters, distFunction);
@@ -212,6 +215,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             result.append(printClusterings());
 
         result.append("Internal validation metrics:\n");
+        result.append("\tRMSSTD: ").append(rmsstd).append("\n");
         result.append("\tSilhouette index: ").append(silhouette).append("\n");
         result.append("\tS_Dbw index: ").append(sdbw).append("\n");
         result.append("\tDBCV: ").append(dbcv).append("\n");
