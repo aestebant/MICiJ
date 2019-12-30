@@ -29,6 +29,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
     private double rmsstd;
     private double silhouette;
+    private double db;
     private double sdbw;
     private double dbcv;
     private ClassEvalResult classEvalResult;
@@ -78,6 +79,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         rmsstd = rmsStdDev.computeIndex(clusterAssignments, bagsPerCluster);
         SilhouetteIndex s = new SilhouetteIndex(processData, maxNumClusters, distFunction, numThreads);
         silhouette = s.computeIndex(clusterAssignments, bagsPerCluster);
+        DaviesBouldinIndex daviesBouldinIndex = new DaviesBouldinIndex(processData, maxNumClusters, distFunction, numThreads);
+        db = daviesBouldinIndex.computeIndex(clusterAssignments, bagsPerCluster);
         S_DbwIndex sDbw = new S_DbwIndex(processData, maxNumClusters, distFunction);
         sdbw = sDbw.computeIndex(clusterAssignments);
         DBCV densityBCV = new DBCV(processData, distFunction, maxNumClusters, numThreads);
@@ -217,6 +220,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         result.append("Internal validation metrics:\n");
         result.append("\tRMSSTD: ").append(rmsstd).append("\n");
         result.append("\tSilhouette index: ").append(silhouette).append("\n");
+        result.append("\tDB* index: ").append(db).append("\n");
         result.append("\tS_Dbw index: ").append(sdbw).append("\n");
         result.append("\tDBCV: ").append(dbcv).append("\n");
         if (classAtt > -1) {

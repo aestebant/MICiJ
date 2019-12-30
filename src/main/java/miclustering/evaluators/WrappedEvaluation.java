@@ -15,6 +15,7 @@ public class WrappedEvaluation {
     private DistanceFunction distanceFunction;
     private RMSStdDev rmssd;
     private SilhouetteIndex silhouette;
+    private DaviesBouldinIndex db;
     private S_DbwIndex sdbw;
     private DBCV dbcv;
     private ClassEvaluation classEval;
@@ -32,6 +33,7 @@ public class WrappedEvaluation {
         rmssd = new RMSStdDev(dataset, maxNumClusters, distanceFunction, nThreads);
         sdbw = new S_DbwIndex(dataset, maxNumClusters, distanceFunction);
         silhouette = new SilhouetteIndex(dataset, maxNumClusters, distanceFunction, nThreads);
+        db = new DaviesBouldinIndex(dataset, maxNumClusters, distanceFunction, nThreads);
         dbcv = new DBCV(dataset, distanceFunction, maxNumClusters, nThreads);
         int nClass = dataset.numDistinctValues(2);
         classEval = new ClassEvaluation(dataset, maxNumClusters, nClass);
@@ -45,6 +47,11 @@ public class WrappedEvaluation {
     public double getRMSSD(List<Integer> clusterAssignments) {
         int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
         return rmssd.computeIndex(clusterAssignments, bagsPerCluster);
+    }
+
+    public double getDB(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return db.computeIndex(clusterAssignments, bagsPerCluster);
     }
 
     public double getSilhouette(List<Integer> clusterAssignments) {
