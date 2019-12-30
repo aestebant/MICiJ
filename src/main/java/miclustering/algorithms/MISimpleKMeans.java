@@ -1,6 +1,7 @@
 package miclustering.algorithms;
 
 import miclustering.distances.HausdorffDistance;
+import miclustering.utils.DatasetCentroids;
 import weka.classifiers.rules.DecisionTableHashKey;
 import weka.clusterers.NumberOfClustersRequestable;
 import weka.clusterers.RandomizableClusterer;
@@ -294,20 +295,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         }
     }
 
-    Instance computeCentroid(Instances members) {
-        int numInstAttributes = members.get(0).relationalValue(1).numAttributes();
-
-        Instances aux = new Instances(members.get(0).relationalValue(1));
-        for (Instance member : members) {
-            aux.addAll(member.relationalValue(1));
-        }
-
-        double[] means = new double[numInstAttributes];
-        for (int i = 0; i < numInstAttributes; ++i) {
-            means[i] = aux.meanOrMode(i);
-        }
-
-        return new DenseInstance(1.0D, means);
+    protected Instance computeCentroid(Instances members) {
+        return DatasetCentroids.computeCentroid(members);
     }
 
     @Override

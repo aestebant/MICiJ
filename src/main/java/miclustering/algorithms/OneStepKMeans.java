@@ -1,10 +1,14 @@
 package miclustering.algorithms;
 
+import miclustering.utils.DatasetCentroids;
 import miclustering.utils.ProcessDataset;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
-import weka.core.*;
+import weka.core.DistanceFunction;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.Utils;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,76 +32,8 @@ public class OneStepKMeans {
     }
 
     public List<Integer> evaluate (List<Integer> clusterAssignments) {
-        Map<Integer, Instances> bagsPerCluster = createClusters(clusterAssignments);
-        Map<Integer, Instance> centroids = getCentroids(bagsPerCluster);
+        Map<Integer, Instance> centroids = DatasetCentroids.compute(dataset, numClusters, clusterAssignments, Runtime.getRuntime().availableProcessors());
         return assignBagsToClusters(centroids);
-    }
-
-    private Map<Integer, Instances> createClusters(List<Integer> clusterAssignments) {
-        Map<Integer, Instances> bagsPerCluster = new HashMap<>(numClusters);
-        for (int cluster = 0; cluster < this.numClusters; ++cluster) {
-            bagsPerCluster.put(cluster, new Instances(dataset, 0));
-        }
-        for (int i = 0; i < dataset.numInstances(); ++i) {
-            bagsPerCluster.get(clusterAssignments.get(i)).add(dataset.get(i));
-        }
-        return bagsPerCluster;
-    }
-
-    private Map<Integer, Instance> getCentroids(Map<Integer, Instances> bagsPerCluster) {
-        Map<Integer, Instance> centroids = new HashMap<>(numClusters);
-
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(numClusters);
-        for (int i = 0; i < numClusters; ++i) {
-            collection.add(new ParallelizeComputeCentroid(i, bagsPerCluster.get(i)));
-        }
-        try {
-            List<Future<Map<Integer, Instance>>> futures = executor.invokeAll(collection);
-            for (Future<Map<Integer, Instance>> future : futures) {
-                Map<Integer, Instance> result = future.get();
-                for (Map.Entry<Integer, Instance> r : result.entrySet()) {
-                    centroids.put(r.getKey(), r.getValue());
-                }
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-        executor.shutdown();
-
-        return centroids;
-    }
-
-    private class ParallelizeComputeCentroid implements Callable<Map<Integer, Instance>> {
-        Instances cluster;
-        Integer idx;
-        ParallelizeComputeCentroid(Integer idx, Instances cluster) {
-            this.idx = idx;
-            this.cluster = cluster;
-        }
-        @Override
-        public Map<Integer, Instance> call() throws Exception {
-            Instance centroid = computeCentroid(cluster);
-            Map<Integer, Instance> result = new HashMap<>();
-            result.put(idx, centroid);
-            return result;
-        }
-    }
-
-    private Instance computeCentroid(Instances members) {
-        int numInstAttributes = members.get(0).relationalValue(1).numAttributes();
-
-        Instances aux = new Instances(members.get(0).relationalValue(1));
-        for (Instance member : members) {
-            aux.addAll(member.relationalValue(1));
-        }
-
-        double[] means = new double[numInstAttributes];
-        for (int i = 0; i < numInstAttributes; ++i) {
-            means[i] = aux.meanOrMode(i);
-        }
-
-        return new DenseInstance(1.0D, means);
     }
 
     private List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids) {
