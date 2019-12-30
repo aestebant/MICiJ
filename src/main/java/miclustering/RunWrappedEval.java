@@ -49,15 +49,16 @@ public class RunWrappedEval {
             double rmssd = evaluation.getRMSSD(clusterAssignmet);
             double dbcv = evaluation.getDBCV(clusterAssignmet);
             double silhouette = evaluation.getSilhouette(clusterAssignmet);
+            double xb = evaluation.getXB(clusterAssignmet);
             double db = evaluation.getDB(clusterAssignmet);
             double sdbw = evaluation.getSdbw(clusterAssignmet);
             Map<String, String> ev = evaluation.getExternalEvaluation(clusterAssignmet);
 
-            String result = String.join(" , ", String.valueOf(rmssd), String.valueOf(silhouette), String.valueOf(db),
+            String result = String.join(" , ", String.valueOf(rmssd), String.valueOf(silhouette), String.valueOf(xb), String.valueOf(db),
                     String.valueOf(sdbw), String.valueOf(dbcv), ev.get("entropy"), ev.get("purity"),
                     ev.get("rand"), ev.get("macro-precision"), ev.get("macro-recall"), ev.get("macro-f1"), ev.get("macro-specificity"), ev.get("confmat"));
 
-            System.out.println("RMSSD , Silhouette , DB , SDBW , DBCV , Entropy , Purity , Rand index , Precision , Recall , F1 , Specificity , Confusion Matrix");
+            System.out.println("RMSSD , Silhouette , XB , DB , SDBW , DBCV , Entropy , Purity , Rand index , Precision , Recall , F1 , Specificity , Confusion Matrix");
             System.out.println(result);
         }
     }
