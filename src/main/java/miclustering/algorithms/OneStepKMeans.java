@@ -45,6 +45,15 @@ public class OneStepKMeans {
         return assignBagsToClusters(centroids);
     }
 
+    public List<Integer> assignBagsToClusters(int[] centroidsIdx) {
+        Map<Integer, Instance> centroids = new HashMap<>(centroidsIdx.length);
+        for (int i = 0; i < centroidsIdx.length; ++i) {
+            Instance centroid = dataset.get(i);
+            centroids.put(i, centroid);
+        }
+        return assignBagsToClusters(centroids);
+    }
+
     public List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids) {
         double[][] distances = new double[dataset.numInstances()][numClusters];
 
