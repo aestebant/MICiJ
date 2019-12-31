@@ -1,8 +1,10 @@
 package miclustering.evaluators;
 
+import miclustering.utils.DatasetCentroids;
 import miclustering.utils.PrintConfusionMatrix;
 import miclustering.utils.ProcessDataset;
 import weka.core.DistanceFunction;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
 
@@ -14,6 +16,8 @@ import java.util.Map;
 public class WrappedEvaluation {
     private DistanceFunction distanceFunction;
     private RMSStdDev rmssd;
+    private TotalWithinClusterVariation twcv;
+    private FastTotalWithinClusterValidation ftwcv;
     private SilhouetteIndex silhouette;
     private XieBeniIndex xb;
     private DaviesBouldinIndex db;
@@ -21,17 +25,21 @@ public class WrappedEvaluation {
     private DBCV dbcv;
     private ClassEvaluation classEval;
     private int maxNumClusters;
+    private Instances dataset;
+    private int nThreads;
 
     public WrappedEvaluation(String datasetPath, String distanceClass, String distanceConfig, int maxNumClusters) {
-        Instances dataset = ProcessDataset.readArff(datasetPath);
+        dataset = ProcessDataset.readArff(datasetPath);
         dataset.setClassIndex(2);
         try {
             distanceFunction = (DistanceFunction) Utils.forName(DistanceFunction.class, distanceClass, Utils.splitOptions(distanceConfig));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        int nThreads = Runtime.getRuntime().availableProcessors();
+        nThreads = Runtime.getRuntime().availableProcessors();
         rmssd = new RMSStdDev(dataset, maxNumClusters, distanceFunction, nThreads);
+        twcv = new TotalWithinClusterVariation(dataset, maxNumClusters, distanceFunction, nThreads);
+        ftwcv = new FastTotalWithinClusterValidation(dataset, maxNumClusters);
         sdbw = new S_DbwIndex(dataset, maxNumClusters, distanceFunction);
         silhouette = new SilhouetteIndex(dataset, maxNumClusters, distanceFunction, nThreads);
         xb = new XieBeniIndex(dataset, maxNumClusters, distanceFunction, nThreads);
@@ -112,5 +120,31 @@ public class WrappedEvaluation {
             instancesPerCluster[classIdx]++;
         }
         return instancesPerCluster;
+    }
+
+    public double getTWCV(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return twcv.computeIndex(clusterAssignments, bagsPerCluster);
+    }
+
+    public double getFastTWCV(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        //return ftwcv.computeIndex(clusterAssignments, bagsPerCluster);
+        return ftwcv.selectorModification(clusterAssignments, bagsPerCluster);
+    }
+
+    public void restartFTWCVMin() {
+        ftwcv.restartMin();
+    }
+
+    public Map<Integer, Instance> getCentroids(List<Integer> clusterAssignments) {
+        return DatasetCentroids.compute(dataset, maxNumClusters, clusterAssignments, nThreads);
+    }
+
+    public double[] computeDistances(int instanceIdx, Map<Integer, Instance> centroids) {
+        double[] distances = new double[maxNumClusters];
+        for (Map.Entry<Integer, Instance> entry : centroids.entrySet())
+            distances[entry.getKey()] = distanceFunction.distance(dataset.get(instanceIdx), entry.getValue());
+        return distances;
     }
 }
