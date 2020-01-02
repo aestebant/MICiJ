@@ -1,7 +1,9 @@
 package miclustering.evaluators;
 
-import miclustering.algorithms.MIClusterer;
+import miclustering.utils.DatasetCentroids;
+import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
+import miclustering.utils.ProcessDataset;
 import weka.clusterers.Clusterer;
 import weka.core.*;
 import weka.filters.Filter;
@@ -15,25 +17,34 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class ClusterEvaluation implements Serializable, OptionHandler, RevisionHandler {
-    private Clusterer clusterer;
-    private DistanceFunction distFunction;
+    private DistanceFunction distanceFunction;
     private Instances instances;
+    private DatasetCentroids datasetCentroids;
 
     private List<Integer> clusterAssignments;
     private int[] bagsPerCluster;
     private int unclusteredInstances;
     private int actualNumClusters;
 
-    private String classString;
     private int classAtt;
+    private int maxNumClusters;
+    private boolean printClusterAssignments;
+    private String attributeRangeString;
 
-    private double rmsstd;
-    private double silhouette;
-    private double xb;
-    private double db;
-    private double sdbw;
-    private double dbcv;
-    private ClassEvalResult classEvalResult;
+    private RMSStdDev rmssd;
+    private double computedRmssd;
+    private SilhouetteIndex silhouette;
+    private double computedSilhouette;
+    private XieBeniIndex xb;
+    private double computedXb;
+    private DaviesBouldinIndex db;
+    private double computedDb;
+    private S_DbwIndex sdbw;
+    private double computedSdbw;
+    private DBCV dbcv;
+    private double computedDbcv;
+    private ExternalEvaluation extEval;
+    private ExtEvalResult extEvalResult;
     private double entropy;
     private double purity;
     private double rand;
@@ -42,112 +53,78 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private double[] f1;
     private double[] specificity;
 
-    private boolean printClusterAssignments;
-    private String attributeRangeString;
-    private int numThreads;
-    private ClassEvaluation ce;
+    private TotalWithinClusterVariation twcv;
+    private FastTotalWithinClusterValidation ftwcv;
 
-    public void evaluateClusterer(Instances data) throws Exception {
-        if (clusterer == null) {
-            throw new Exception("Clusterer not set");
-        }
-
-        setClass(data);
-        instances = data;
-        distFunction = ((MIClusterer) clusterer).getDistanceFunction();
-
+    public void evaluateClusterer(Clusterer clusterer, boolean parallelize) throws Exception {
         Instances processData;
         if (classAtt > -1) {
             Remove removeClass = new Remove();
             removeClass.setAttributeIndices(String.valueOf(classAtt + 1)); // No sé por qué aquí cuenta los índices empezando en 1
             removeClass.setInvertSelection(false);
             try {
-                removeClass.setInputFormat(data);
+                removeClass.setInputFormat(instances);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            processData = Filter.useFilter(data, removeClass);
+            processData = Filter.useFilter(instances, removeClass);
         } else {
-            processData = new Instances(data);
+            processData = new Instances(instances);
         }
 
         clusterer.buildClusterer(processData);
-        int maxNumClusters = clusterer.numberOfClusters();
-        countInstancesPerCluster(clusterer, processData);
-        actualNumClusters = countRealClusters(maxNumClusters, bagsPerCluster);
+        maxNumClusters = clusterer.numberOfClusters();
+        List<Integer> clusterAssignments = getClusterAssignments(clusterer, processData);
+        fullEvaluation(clusterAssignments, parallelize);
+    }
 
-        RMSStdDev rmsStdDev = new RMSStdDev(processData, maxNumClusters, distFunction, numThreads);
-        rmsstd = rmsStdDev.computeIndex(clusterAssignments, bagsPerCluster);
-        SilhouetteIndex s = new SilhouetteIndex(processData, maxNumClusters, distFunction, numThreads);
-        silhouette = s.computeIndex(clusterAssignments, bagsPerCluster);
-        XieBeniIndex xieBeniIndex = new XieBeniIndex(processData, maxNumClusters, distFunction, numThreads);
-        xb = xieBeniIndex.computeIndex(clusterAssignments, bagsPerCluster);
-        DaviesBouldinIndex daviesBouldinIndex = new DaviesBouldinIndex(processData, maxNumClusters, distFunction, numThreads);
-        db = daviesBouldinIndex.computeIndex(clusterAssignments, bagsPerCluster);
-        S_DbwIndex sDbw = new S_DbwIndex(processData, maxNumClusters, distFunction);
-        sdbw = sDbw.computeIndex(clusterAssignments);
-        DBCV densityBCV = new DBCV(processData, distFunction, maxNumClusters, numThreads);
-        dbcv = densityBCV.computeIndex(clusterAssignments, bagsPerCluster);
+    public void fullEvaluation(List<Integer> clusterAssignments, boolean parallelize) {
+        bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        actualNumClusters = countRealClusters(maxNumClusters, bagsPerCluster);
+        Map<Integer, Instance> centroids = datasetCentroids.compute(clusterAssignments, parallelize);
+
+        computedRmssd = rmssd.computeIndex(clusterAssignments, bagsPerCluster, centroids);
+        computedSilhouette = silhouette.computeIndex(clusterAssignments, bagsPerCluster);
+        computedXb = xb.computeIndex(clusterAssignments, bagsPerCluster, centroids);
+        computedDb = db.computeIndex(clusterAssignments, bagsPerCluster, centroids);
+        computedSdbw = sdbw.computeIndex(clusterAssignments);
+        computedDbcv = dbcv.computeIndex(clusterAssignments, bagsPerCluster);
 
         if (classAtt > -1) {
-            ce = new ClassEvaluation(data, maxNumClusters, data.numClasses());
-            classEvalResult = ce.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
-            entropy = ce.computeEntropy(classEvalResult.getConfMatrix(), bagsPerCluster);
-            purity = ce.computePurity(classEvalResult.getConfMatrix());
-            rand = ce.computeRandIndex(classEvalResult);
-            precision = ce.computePrecision(classEvalResult);
-            recall = ce.computeRecall(classEvalResult);
-            f1 = ce.computeF1(classEvalResult, precision, recall);
-            specificity = ce.computeSpecificity(classEvalResult);
+            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numClasses());
+            extEvalResult = extEval.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
+            entropy = extEval.computeEntropy(extEvalResult.getConfMatrix(), bagsPerCluster);
+            purity = extEval.computePurity(extEvalResult.getConfMatrix());
+            rand = extEval.computeRandIndex(extEvalResult);
+            precision = extEval.computePrecision(extEvalResult);
+            recall = extEval.computeRecall(extEvalResult);
+            f1 = extEval.computeF1(extEvalResult, precision, recall);
+            specificity = extEval.computeSpecificity(extEvalResult);
         }
-
+        this.clusterAssignments = clusterAssignments;
     }
 
-    private void setClass(Instances data) {
-        if (classString.length() != 0) {
-            if (classString.equals("last"))
-                classAtt = data.numAttributes() - 1;
-            else if (classString.equals("first"))
-                classAtt = 0;
-            else {
-                classAtt = Integer.parseInt(classString);
-            }
-            data.setClassIndex(classAtt);
-        } else {
-            classAtt = data.classIndex();
-        }
-    }
-
-    public void setClusterer(Clusterer clusterer, String[] options) {
-        this.clusterer = clusterer;
-        if (clusterer instanceof OptionHandler) {
+    private List<Integer> getClusterAssignments(Clusterer clusterer, Instances instances) {
+        List<Integer> clusterAssignments = new ArrayList<>(instances.numInstances());
+        for (Instance i : instances) {
             try {
-                ((OptionHandler) clusterer).setOptions(options);
+                clusterAssignments.add(clusterer.clusterInstance(i));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        return clusterAssignments;
     }
 
-    private void countInstancesPerCluster(Clusterer clusterer, Instances instances) {
-        int maxNumClusters = 0;
-        try {
-            maxNumClusters = clusterer.numberOfClusters();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        bagsPerCluster = new int[maxNumClusters];
-        clusterAssignments = new ArrayList<>(instances.numInstances());
-        for (Instance i : instances) {
-            try {
-                int clusterIdx = clusterer.clusterInstance(i);
-                bagsPerCluster[clusterIdx]++;
-                clusterAssignments.add(clusterIdx);
-            } catch (Exception e) { // Unclustered instance
+    private int[] countBagsPerCluster(List<Integer> clusterAssignments, int maxNumClusters) {
+        int[] instancesPerCluster = new int[maxNumClusters];
+        for (Integer clusterIdx : clusterAssignments) {
+            if (clusterIdx < 0)
                 unclusteredInstances++;
-                clusterAssignments.add(-1);
-            }
+            else
+                instancesPerCluster[clusterIdx]++;
         }
+        return instancesPerCluster;
     }
 
     private int countRealClusters(int maxNumClusters, int[] instancesPerCluster) {
@@ -159,19 +136,117 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         return actualNumClusters;
     }
 
-    @Override
-    public String toString() {
-        if (clusterer == null) {
-            return "No clusterer built yet";
-        }
+    public int getUnclusteredInstances() {
+        return unclusteredInstances;
+    }
 
+    public int getActualNumClusters() {
+        return actualNumClusters;
+    }
+
+    public double computeRmssd(List<Integer> clusterAssignments, boolean parallelize) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return rmssd.computeIndex(clusterAssignments, bagsPerCluster, parallelize);
+    }
+
+    public double getRmssd() {
+        return computedRmssd;
+    }
+
+    public double computeSilhouette(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return silhouette.computeIndex(clusterAssignments, bagsPerCluster);
+    }
+
+    public double getSilhouette() {
+        return computedSilhouette;
+    }
+
+    public double computeXb(List<Integer> clusterAssignments, boolean parallelize) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return xb.computeIndex(clusterAssignments, bagsPerCluster, parallelize);
+    }
+
+    public double getXb() {
+        return computedXb;
+    }
+
+    public double computeDb(List<Integer> clusterAssignments, boolean parallelize) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return db.computeIndex(clusterAssignments, bagsPerCluster, parallelize);
+    }
+
+    public double getDb() {
+        return computedDb;
+    }
+
+    public double computeSdbw(List<Integer> clusterAssignments) {
+        return sdbw.computeIndex(clusterAssignments);
+    }
+
+    public double getSdbw() {
+        return computedSdbw;
+    }
+
+    public double computeDbcv(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        return dbcv.computeIndex(clusterAssignments, bagsPerCluster);
+    }
+
+    public double getDbcv() {
+        return computedDbcv;
+    }
+
+    public double computeTwcv(List<Integer> clusterAssignments, boolean parallelize) {
+        return twcv.computeIndex(clusterAssignments, parallelize);
+    }
+
+    public double computeFtwcv(List<Integer> clusterAssignments) {
+        int[] bagsPerCluster = countBagsPerCluster(clusterAssignments, maxNumClusters);
+        //return ftwcv.computeIndex(clusterAssignments, bagsPerCluster);
+        return ftwcv.selectorModification(clusterAssignments, bagsPerCluster);
+    }
+
+    public void restartFtwcvMin() {
+        ftwcv.restartMin();
+    }
+
+    public ExtEvalResult getExtEvalResult() {
+        return extEvalResult;
+    }
+
+    public double getEntropy() {
+        return entropy;
+    }
+
+    public double getPurity() {
+        return purity;
+    }
+
+    public double getRand() {
+        return rand;
+    }
+
+    public double getMacroPrecision() {
+        return ExternalEvaluation.getMacroMeasure(extEvalResult, precision, clusterAssignments, bagsPerCluster);
+    }
+
+    public double getMacroRecall() {
+        return ExternalEvaluation.getMacroMeasure(extEvalResult, recall, clusterAssignments, bagsPerCluster);
+    }
+
+    public double getMacroF1() {
+        return ExternalEvaluation.getMacroMeasure(extEvalResult, f1, clusterAssignments, bagsPerCluster);
+    }
+
+    public double getMacroSpecificity() {
+        return ExternalEvaluation.getMacroMeasure(extEvalResult, specificity, clusterAssignments, bagsPerCluster);
+    }
+
+    public String printFullEvaluation() {
         StringBuilder result = new StringBuilder();
-
-        result.append("Algorithm: ").append(clusterer.getClass().getName()).append("\n");
-        result.append("Dataset: ").append(instances.relationName()).append("\n");
         result.append("Evaluation\n----------------\n");
 
-        int maxNumClusters = bagsPerCluster.length;
         int totalClusteredInstances = Utils.sum(bagsPerCluster);
         if (totalClusteredInstances > 0) {
             result.append("Clustered Instances:\n");
@@ -193,7 +268,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         if (classAtt > -1) {
             result.append("Class attribute: \"").append(instances.classAttribute().name()).append("\"\n");
             result.append("Confusion Matrix:\n");
-            result.append(PrintConfusionMatrix.severalLines(classEvalResult, bagsPerCluster, instances.classAttribute()));
+            result.append(PrintConfusionMatrix.severalLines(extEvalResult, bagsPerCluster, instances.classAttribute()));
 
             if (totalClusteredInstances > 0) {
                 int Cwidth = 1 + (int) (Math.log(maxNumClusters) / Math.log(10D));
@@ -202,18 +277,18 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
                     if (bagsPerCluster[i] > 0) {
                         result.append("\tCluster ").append(Utils.doubleToString(i, Cwidth, 0));
                         result.append(" <-- ");
-                        if (classEvalResult.getClusterToClass()[i] < 0) {
+                        if (extEvalResult.getClusterToClass()[i] < 0) {
                             result.append("No class\n");
                         } else {
-                            result.append(instances.classAttribute().value(classEvalResult.getClusterToClass()[i])).append("\n");
+                            result.append(instances.classAttribute().value(extEvalResult.getClusterToClass()[i])).append("\n");
                         }
                     }
                 }
             }
             result.append("Incorrectly clustered instances :\t")
-                    .append(classEvalResult.getClusterToClass()[maxNumClusters])
+                    .append(extEvalResult.getClusterToClass()[maxNumClusters])
                     .append("\t(")
-                    .append((double) classEvalResult.getClusterToClass()[maxNumClusters] / instances.numInstances() * 100.0D)
+                    .append((double) extEvalResult.getClusterToClass()[maxNumClusters] / instances.numInstances() * 100.0D)
                     .append(" %)\n");
         }
 
@@ -221,21 +296,21 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             result.append(printClusterings());
 
         result.append("Internal validation metrics:\n");
-        result.append("\tRMSSTD: ").append(rmsstd).append("\n");
-        result.append("\tSilhouette index: ").append(silhouette).append("\n");
-        result.append("\tXB* index: ").append(xb).append("\n");
-        result.append("\tDB* index: ").append(db).append("\n");
-        result.append("\tS_Dbw index: ").append(sdbw).append("\n");
-        result.append("\tDBCV: ").append(dbcv).append("\n");
+        result.append("\tRMSSTD: ").append(computedRmssd).append("\n");
+        result.append("\tSilhouette index: ").append(computedSilhouette).append("\n");
+        result.append("\tXB* index: ").append(computedXb).append("\n");
+        result.append("\tDB* index: ").append(computedDb).append("\n");
+        result.append("\tS_Dbw index: ").append(computedSdbw).append("\n");
+        result.append("\tDBCV: ").append(computedDbcv).append("\n");
         if (classAtt > -1) {
             result.append("External validation metrics:\n");
             result.append("\tEntropy: ").append(entropy).append("\n");
             result.append("\tPurity: ").append(purity).append("\n");
             result.append("\tRand index: ").append(rand).append("\n");
-            result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, precision, clusterAssignments, bagsPerCluster)).append("\n");
-            result.append("\tRecall: ").append(Arrays.toString(recall)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, recall, clusterAssignments, bagsPerCluster)).append("\n");
-            result.append("\tF1 measure: ").append(Arrays.toString(f1)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, f1, clusterAssignments, bagsPerCluster)).append("\n");
-            result.append("\tSpecificity: ").append(Arrays.toString(specificity)).append("\tMacro: ").append(ce.getMacroMeasure(classEvalResult, specificity, clusterAssignments, bagsPerCluster));
+            result.append("\tPrecision: ").append(Arrays.toString(precision)).append("\tMacro: ").append(ExternalEvaluation.getMacroMeasure(extEvalResult, precision, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tRecall: ").append(Arrays.toString(recall)).append("\tMacro: ").append(ExternalEvaluation.getMacroMeasure(extEvalResult, recall, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tF1 measure: ").append(Arrays.toString(f1)).append("\tMacro: ").append(ExternalEvaluation.getMacroMeasure(extEvalResult, f1, clusterAssignments, bagsPerCluster)).append("\n");
+            result.append("\tSpecificity: ").append(Arrays.toString(specificity)).append("\tMacro: ").append(ExternalEvaluation.getMacroMeasure(extEvalResult, specificity, clusterAssignments, bagsPerCluster));
         }
 
         return result.toString();
@@ -258,56 +333,16 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         return result.toString();
     }
 
-    public int getUnclusteredInstances() {
-        return unclusteredInstances;
-    }
-
-    public int getActualNumClusters() {
-        return actualNumClusters;
-    }
-
-    public double getSilhouette() {
-        return silhouette;
-    }
-
-    public double getSdbw() {
-        return sdbw;
-    }
-
-    public double getDbcv() {
-        return dbcv;
-    }
-
-    public ClassEvalResult getClassEvalResult() {
-        return classEvalResult;
-    }
-
-    public double getPurity() {
-        return purity;
-    }
-
-    public double getRand() {
-        return rand;
-    }
-
-    public double getMacroPrecision() {
-        return ce.getMacroMeasure(classEvalResult, precision, clusterAssignments, bagsPerCluster);
-    }
-
-    public double getMacroRecall() {
-        return ce.getMacroMeasure(classEvalResult, recall, clusterAssignments, bagsPerCluster);
-    }
-
-    public double getMacroF1() {
-        return ce.getMacroMeasure(classEvalResult, f1, clusterAssignments, bagsPerCluster);
-    }
-
-    public double getSpecificity() {
-        return ce.getMacroMeasure(classEvalResult, specificity, clusterAssignments, bagsPerCluster);
-    }
-
     public DistanceFunction getDistanceFunction() {
-        return distFunction;
+        return distanceFunction;
+    }
+
+    public Instances getInstances() {
+        return instances;
+    }
+
+    public DatasetCentroids getDatasetCentroids() {
+        return datasetCentroids;
     }
 
     //TODO No adaptado a MI
@@ -391,24 +426,54 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     @Override
     public void setOptions(String[] options) throws Exception {
         boolean help = Utils.getFlag("h", options);
-        boolean synopsis = Utils.getFlag("synopsis", options);
         if (help) {
-            if (synopsis) {
-                System.out.println(listOptions(clusterer));
-            } else {
-                System.out.println(listOptions());
-            }
+            System.out.println(listOptions());
             return;
         }
-        classString = Utils.getOption("c", options);
+        String datasetPath = Utils.getOption("d", options);
+        instances = ProcessDataset.readArff(datasetPath);
+        String classString = Utils.getOption("c", options);
+        setClass(classString);
+
+        String distFunctionClass = Utils.getOption("A", options);
+        distanceFunction = LoadByName.distanceFunction(distFunctionClass, options);
+
+        maxNumClusters = Integer.parseInt(Utils.getOption("k", options));
+
+        boolean parallelize = Utils.getFlag("parallelize", options);
+
         attributeRangeString = Utils.getOption("p", options);
-        String sThreads = Utils.getOption("num-threads", options);
-        if (sThreads.length() > 0)
-            numThreads = Integer.parseInt(sThreads);
         if (attributeRangeString.length() != 0)
             printClusterAssignments = true;
 
         Utils.checkForRemainingOptions(options);
+
+        rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
+        sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+        silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
+        xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
+        db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+        dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
+        if (classAtt > -1)
+            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
+        twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+        ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
+        datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+    }
+
+    private void setClass(String classString) {
+        if (classString.length() != 0) {
+            if (classString.equals("last"))
+                classAtt = instances.numAttributes() - 1;
+            else if (classString.equals("first"))
+                classAtt = 0;
+            else {
+                classAtt = Integer.parseInt(classString);
+            }
+            instances.setClassIndex(classAtt);
+        } else {
+            classAtt = instances.classIndex();
+        }
     }
 
     @Override

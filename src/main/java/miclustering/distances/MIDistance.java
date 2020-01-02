@@ -40,7 +40,7 @@ public abstract class MIDistance implements DistanceFunction {
             throw (new Exception("Number of attributes is not equals"));
         }
 
-        Set<Integer> key = new HashSet<>(2);
+        /*Set<Integer> key = new HashSet<>(2);
         key.add(bag1.hashCode());
         key.add(bag2.hashCode());
         double distance;
@@ -52,7 +52,8 @@ public abstract class MIDistance implements DistanceFunction {
             synchronized (cachedDistances) {
                 cachedDistances.put(key, distance);
             }
-        }
+        }*/
+        double distance = computeDistance(i1, i2);
 
         if (performanceStats != null)
             performanceStats.incrCoordCount();

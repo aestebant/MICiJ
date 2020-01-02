@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class OneStepKMeans {
     private Instances dataset;
     private DistanceFunction distanceFunction;
+    private DatasetCentroids datasetCentroids;
     private int numClusters;
     private boolean checkValidSolution;
 
@@ -31,6 +32,7 @@ public class OneStepKMeans {
         this.dataset = dataset;
         this.numClusters = numClusters;
         this.checkValidSolution = checkValidSolution;
+        datasetCentroids = new DatasetCentroids(dataset, numClusters, distanceFunction);
     }
 
     public OneStepKMeans(Instances dataset, DistanceFunction distanceFunction, int numClusters, boolean checkValidSolution) {
@@ -40,38 +42,44 @@ public class OneStepKMeans {
         this.checkValidSolution = checkValidSolution;
     }
 
-    public List<Integer> evaluate (List<Integer> clusterAssignments) {
-        Map<Integer, Instance> centroids = DatasetCentroids.compute(dataset, numClusters, clusterAssignments, Runtime.getRuntime().availableProcessors());
-        return assignBagsToClusters(centroids);
+    public List<Integer> evaluate (List<Integer> clusterAssignments, boolean parallelize) {
+        Map<Integer, Instance> centroids = datasetCentroids.compute(clusterAssignments, parallelize);
+        return assignBagsToClusters(centroids, parallelize);
     }
 
-    public List<Integer> assignBagsToClusters(int[] centroidsIdx) {
+    public List<Integer> assignBagsToClusters(int[] centroidsIdx, boolean parallelize) {
         Map<Integer, Instance> centroids = new HashMap<>(centroidsIdx.length);
         for (int i = 0; i < centroidsIdx.length; ++i) {
-            Instance centroid = dataset.get(i);
+            Instance centroid = dataset.get(centroidsIdx[i]);
             centroids.put(i, centroid);
         }
-        return assignBagsToClusters(centroids);
+        return assignBagsToClusters(centroids, parallelize);
     }
 
-    public List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids) {
+    public List<Integer> assignBagsToClusters(Map<Integer, Instance> centroids, boolean parallelize) {
         double[][] distances = new double[dataset.numInstances()][numClusters];
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Collection<Callable<ResultAssignation>> collection = new ArrayList<>(dataset.numInstances());
-        for (int i = 0; i < dataset.numInstances(); ++i) {
-            collection.add(new ParallelizeAssignation(centroids, dataset.get(i), i));
-        }
-        try {
-            List<Future<ResultAssignation>> futures = executor.invokeAll(collection);
-            for (Future<ResultAssignation> future : futures) {
-                ResultAssignation result = future.get();
-                distances[result.getBagId()] = result.getDistances();
+        if (parallelize) {
+            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            Collection<Callable<ResultAssignation>> collection = new ArrayList<>(dataset.numInstances());
+            for (int i = 0; i < dataset.numInstances(); ++i) {
+                collection.add(new ParallelizeAssignation(centroids, dataset.get(i), i));
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            try {
+                List<Future<ResultAssignation>> futures = executor.invokeAll(collection);
+                for (Future<ResultAssignation> future : futures) {
+                    ResultAssignation result = future.get();
+                    distances[result.getBagId()] = result.getDistances();
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            executor.shutdown();
+        } else {
+            for (int i = 0; i < dataset.numInstances(); ++i) {
+                distances[i] = computeAssignation(centroids, dataset.get(i));
+            }
         }
-        executor.shutdown();
 
         RealMatrix distMatrix = new Array2DRowRealMatrix(distances);
         List<Integer> clusterAssignments = new ArrayList<>(dataset.numInstances());
@@ -138,5 +146,9 @@ public class OneStepKMeans {
         public double[] getDistances() {
             return distances;
         }
+    }
+
+    public DatasetCentroids getDatasetCentroids() {
+        return datasetCentroids;
     }
 }

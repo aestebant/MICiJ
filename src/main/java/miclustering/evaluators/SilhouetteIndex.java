@@ -13,10 +13,10 @@ public class SilhouetteIndex {
     private int maxNumClusters;
     private double[][] distances;
 
-    public SilhouetteIndex(Instances instances,  int maxNumClusters, DistanceFunction distanceFunction, int numThreads) {
+    public SilhouetteIndex(Instances instances,  int maxNumClusters, DistanceFunction distanceFunction, boolean parallelize) {
         this.maxNumClusters = maxNumClusters;
         DistancesMatrix dm = new DistancesMatrix();
-        distances = dm.compute(instances, numThreads, distanceFunction);
+        distances = dm.compute(instances, distanceFunction, parallelize);
     }
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {

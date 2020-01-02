@@ -15,18 +15,21 @@ public class DaviesBouldinIndex {
     private Instances instances;
     private int maxNumClusters;
     private DistanceFunction distanceFunction;
-    private int numThreads;
+    private DatasetCentroids datasetCentroids;
 
-    public DaviesBouldinIndex(Instances instances, int maxNumClusters, DistanceFunction distanceFunction, int numThreads) {
+    public DaviesBouldinIndex(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
         this.instances = instances;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
-        this.numThreads = numThreads;
+        this.datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
     }
 
-    public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {
-        Map<Integer, Instance> centroids = DatasetCentroids.compute(instances, maxNumClusters, clusterAssignments, numThreads);
+    public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, boolean parallelize) {
+        Map<Integer, Instance> centroids = datasetCentroids.compute(clusterAssignments, parallelize);
+        return computeIndex(clusterAssignments, bagsPerCluster, centroids);
+    }
 
+    public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, Map<Integer, Instance> centroids) {
         double[] sumDist = new double[maxNumClusters];
         for (int i = 0; i < instances.numInstances(); ++i)
             sumDist[clusterAssignments.get(i)] += distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i)));

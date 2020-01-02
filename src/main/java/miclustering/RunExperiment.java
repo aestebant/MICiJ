@@ -1,7 +1,7 @@
 package miclustering;
 
 import miclustering.algorithms.MIClusterer;
-import miclustering.evaluators.ClassEvalResult;
+import miclustering.evaluators.ExtEvalResult;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
@@ -24,8 +24,6 @@ public class RunExperiment {
     private static String[] clustering;
     private static Map<String, List<String>> clusterConfig;
 
-    private static int nThreads = 1;
-
     private static String reportTitle;
     private static FileWriter reportFileWriter;
 
@@ -35,12 +33,11 @@ public class RunExperiment {
             return;
         }
         reportTitle = args[0];
-        nThreads = Runtime.getRuntime().availableProcessors();
 
         setExperiments();
         setSaveResults();
 
-        String evaluationConfig = "-c last  -num-threads " + nThreads;
+        String evaluationConfig = "-c last";
 
         int nConfigs = 0;
         for (Map.Entry<String, List<String>> e: clusterConfig.entrySet()) {
@@ -68,8 +65,7 @@ public class RunExperiment {
                         ClusterEvaluation eval = new ClusterEvaluation();
                         try {
                             eval.setOptions(Utils.splitOptions(evaluationConfig));
-                            eval.setClusterer(clusterer, Utils.splitOptions(config));
-                            eval.evaluateClusterer(dataset);
+                            eval.evaluateClusterer(clusterer, true);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -78,21 +74,26 @@ public class RunExperiment {
                         int actualNClusters = eval.getActualNumClusters();
                         int clusteredBags = dataset.numInstances()-eval.getUnclusteredInstances();
                         int unclusteredBags = eval.getUnclusteredInstances();
+                        double rmsstd = eval.getRmssd();
                         double silhouette = eval.getSilhouette();
+                        double xb = eval.getXb();
+                        double db = eval.getDb();
                         double sdbw = eval.getSdbw();
                         double dbcv = eval.getDbcv();
-                        ClassEvalResult cer = eval.getClassEvalResult();
+                        ExtEvalResult cer = eval.getExtEvalResult();
+                        double entropy = eval.getEntropy();
                         double purity = eval.getPurity();
                         double rand = eval.getRand();
                         double precision = eval.getMacroPrecision();
                         double recall = eval.getMacroRecall();
                         double f1 = eval.getMacroF1();
-                        double specificity = eval.getSpecificity();
+                        double specificity = eval.getMacroSpecificity();
                         double time = ((MIClusterer)clusterer).getElapsedTime();
                         String reportTitle = saveFullReport(clusterer, eval);
                         String report = String.join(",", c, config, d + z, distance, String.valueOf(actualNClusters),
-                                String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(silhouette),
-                                String.valueOf(sdbw), String.valueOf(dbcv), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
+                                String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(rmsstd), String.valueOf(silhouette),
+                                String.valueOf(xb), String.valueOf(db), String.valueOf(sdbw), String.valueOf(dbcv),
+                                String.valueOf(entropy), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
                                 String.valueOf(recall), String.valueOf(f1), String.valueOf(specificity), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
                                 String.valueOf(time), reportTitle);
                         try {
@@ -149,14 +150,14 @@ public class RunExperiment {
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                kMeansConfig.add("-N " + k + " -num-slots " + nThreads + " -V -hausdorff-type " + hausdorff);
+                kMeansConfig.add("-N " + k + " -V -hausdorff-type " + hausdorff);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
         for (double eps : new double[]{0.6, 0.9, 1.2, 1.5}) {
             for (int minPts = 2; minPts <= 4; ++minPts) {
                 for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
-                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -num-threads " + nThreads + " -hausdorff-type " + hausdorff);
+                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausdorff);
                 }
             }
         }
@@ -188,7 +189,7 @@ public class RunExperiment {
         try {
             reportFileWriter = new FileWriter(reportFile);
             reportFileWriter.flush();
-            reportFileWriter.write("Algorithm,Configuration,Dataset,Distance Function,Clusters,Clusterd bags,Unclustered bags,Silhouette,S_Dbw,DBCV,Purity,Rand index,Precision,Recall,F1,Specificity,Conf Matrix,Time,Report\n");
+            reportFileWriter.write("Algorithm,Configuration,Dataset,Distance Function,Clusters,Clusterd bags,Unclustered bags,RMSSD,Silhouete,XB,DB,S_Dbw,DBCV,Entropy,Purity,Rand index,Precision,Recall,F1,Specificity,Conf Matrix,Time,Report\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -12,14 +12,12 @@ public class Database implements Serializable, RevisionHandler {
     private TreeMap<String, DataObject> treeMap;
     private Instances instances;
     private final DistanceFunction df;
-    private int nThreads;
 
-    public Database(DistanceFunction distFunc, Instances instances, int nThreads) {
+    public Database(DistanceFunction distFunc, Instances instances) {
         this.instances = instances;
         this.treeMap = new TreeMap<>();
         df = distFunc;
         df.setInstances(instances);
-        this.nThreads = nThreads;
     }
 
     public DataObject getDataObject(String key) {
@@ -27,7 +25,7 @@ public class Database implements Serializable, RevisionHandler {
     }
 
     public List<DataObject> epsilonRangeQuery(double epsilon, DataObject queryDataObject) {
-        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         Collection<Callable<DataObject>> collection = new ArrayList<>();
 
         List<DataObject> nEps = new ArrayList<>();

@@ -3,6 +3,7 @@ package miclustering.algorithms;
 import miclustering.algorithms.utils.DataObject;
 import miclustering.algorithms.utils.Database;
 import miclustering.distances.HausdorffDistance;
+import miclustering.utils.LoadByName;
 import weka.clusterers.AbstractClusterer;
 import weka.core.*;
 import weka.core.Capabilities.Capability;
@@ -18,7 +19,6 @@ import java.util.Vector;
 public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     private double epsilon = 0.9;
     private int minPoints = 6;
-    private int nThreads = 1;
     private int numGeneratedClusters;
     private int numNoises;
     private DistanceFunction distFunction = new HausdorffDistance();
@@ -46,7 +46,7 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
         numGeneratedClusters = 0;
         numNoises = 0;
         clusterID = 0;
-        database = new Database(distFunction, instances, nThreads);
+        database = new Database(distFunction, instances);
 
         for (int i = 0; i < database.getInstances().numInstances(); ++i) {
             Instance instance = database.getInstances().instance(i);
@@ -158,22 +158,7 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
         }
 
         String distance = Utils.getOption('A', options);
-        if (distance.length() != 0) {
-            String[] distSpec = Utils.splitOptions(distance);
-            if (distSpec.length == 0) {
-                throw new Exception("Invalid DistanceFunction specification string.");
-            }
-            String className = distSpec[0];
-            distSpec[0] = "";
-            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distSpec), options);
-        } else {
-            this.setDistanceFunction(new HausdorffDistance(), options);
-        }
-
-        String nThreads = Utils.getOption("num-slots", options);
-        if (nThreads.length() != 0) {
-            this.nThreads = Integer.parseInt(nThreads);
-        }
+        distFunction = LoadByName.distanceFunction(distance, options);
 
         printClusterAssignments = Utils.getFlag("output-clusters", options);
     }

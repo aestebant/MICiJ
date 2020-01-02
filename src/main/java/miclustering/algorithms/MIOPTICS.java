@@ -54,7 +54,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         ReplaceMissingValues replaceMissingValues_Filter = new ReplaceMissingValues();
         replaceMissingValues_Filter.setInputFormat(instances);
         Instances filteredInstances = Filter.useFilter(instances, replaceMissingValues_Filter);
-        this.database = new Database(this.getDistanceFunction(), filteredInstances, 1);
+        this.database = new Database(this.getDistanceFunction(), filteredInstances);
 
         for (int i = 0; i < this.database.getInstances().numInstances(); ++i) {
             DataObject dataObject = new DataObject(this.database.getInstances().instance(i), Integer.toString(i));

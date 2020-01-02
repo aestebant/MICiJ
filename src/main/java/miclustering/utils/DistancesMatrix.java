@@ -13,31 +13,41 @@ public class DistancesMatrix {
 
     private DistanceFunction distanceFunction;
 
-     public double[][] compute(Instances instances, int numThreads, DistanceFunction distanceFunction) {
+     public double[][] compute(Instances instances, DistanceFunction distanceFunction, boolean parallelize) {
         int numBags = instances.numInstances();
         this.distanceFunction = distanceFunction;
 
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        Collection<Callable<Double[]>> collection = new ArrayList<>(numBags);
-        for (int i = 0; i < numBags; ++i) {
-            for (int j = i+1; j < numBags; ++j) {
-                collection.add(new Wrapper(instances.get(i), instances.get(j), i, j));
-            }
-        }
-
         double[][] distances = new double[numBags][numBags];
 
-        try {
-            List<Future<Double[]>> futures = executor.invokeAll(collection);
-            for (Future<Double[]> future : futures) {
-                Double[] result = future.get();
-                distances[result[0].intValue()][result[1].intValue()] = result[2];
-                distances[result[1].intValue()][result[0].intValue()] = result[2];
+        //TODO LA MATRIZ HABRÍA QUE CALCULARLA ENTERA SI LA MÉTRICA DE DISTANCIA NO ES SIMÉTRICA
+        if (parallelize) {
+            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            Collection<Callable<Double[]>> collection = new ArrayList<>(numBags);
+            for (int i = 0; i < numBags; ++i) {
+                for (int j = i + 1; j < numBags; ++j) {
+                    collection.add(new Wrapper(instances.get(i), instances.get(j), i, j));
+                }
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            try {
+                List<Future<Double[]>> futures = executor.invokeAll(collection);
+                for (Future<Double[]> future : futures) {
+                    Double[] result = future.get();
+                    distances[result[0].intValue()][result[1].intValue()] = result[2];
+                    distances[result[1].intValue()][result[0].intValue()] = result[2];
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            executor.shutdown();
+        }else {
+            for (int i = 0; i < numBags; ++i) {
+                for (int j = i + 1; j < numBags; ++j) {
+                    distances[i][j] = distanceFunction.distance(instances.get(i), instances.get(j));
+                    distances[j][i] = distances[i][j];
+                }
+            }
         }
-        executor.shutdown();
+
         return distances;
     }
 

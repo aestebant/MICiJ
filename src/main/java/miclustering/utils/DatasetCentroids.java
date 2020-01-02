@@ -1,6 +1,7 @@
 package miclustering.utils;
 
 import weka.core.DenseInstance;
+import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -8,12 +9,22 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class DatasetCentroids {
-    public static Map<Integer, Instance> compute(Instances instances, int maxNumClusters, List<Integer> clusterAssignments, int nThreads) {
-        Map<Integer, Instances> clusters = createClusters(instances, maxNumClusters, clusterAssignments);
-        return getCentroids(maxNumClusters, clusters, nThreads);
+    private Instances instances;
+    private int maxNumClusters;
+    private DistanceFunction distanceFunction;
+
+    public DatasetCentroids(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.instances = instances;
+        this.maxNumClusters = maxNumClusters;
+        this.distanceFunction = distanceFunction;
     }
 
-    private static Map<Integer, Instances> createClusters(Instances instances, int maxNumClusters, List<Integer> clusterAssignments) {
+    public Map<Integer, Instance> compute(List<Integer> clusterAssignments, boolean parallelize) {
+        Map<Integer, Instances> clusters = createClusters(clusterAssignments);
+        return getCentroids(clusters, parallelize);
+    }
+
+    private Map<Integer, Instances> createClusters(List<Integer> clusterAssignments) {
         Map<Integer, Instances> bagsPerCluster = new HashMap<>(maxNumClusters);
         for (int cluster = 0; cluster < maxNumClusters; ++cluster) {
             bagsPerCluster.put(cluster, new Instances(instances, 0));
@@ -24,32 +35,39 @@ public class DatasetCentroids {
         return bagsPerCluster;
     }
 
-    private static Map<Integer, Instance> getCentroids(int maxNumClusters, Map<Integer, Instances> bagsPerCluster, int nThreads) {
+    private Map<Integer, Instance> getCentroids(Map<Integer, Instances> bagsPerCluster, boolean parallelize) {
         Map<Integer, Instance> centroids = new HashMap<>(maxNumClusters);
 
-        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
-        Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(maxNumClusters);
-        for (int i = 0; i < maxNumClusters; ++i) {
-            if (bagsPerCluster.get(i).numInstances() > 0)
-                collection.add(new ParallelizeComputeCentroid(i, bagsPerCluster.get(i)));
-        }
-        try {
-            List<Future<Map<Integer, Instance>>> futures = executor.invokeAll(collection);
-            for (Future<Map<Integer, Instance>> future : futures) {
-                Map<Integer, Instance> result = future.get();
-                for (Map.Entry<Integer, Instance> r : result.entrySet()) {
-                    centroids.put(r.getKey(), r.getValue());
-                }
+        if (parallelize) {
+            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(maxNumClusters);
+            for (int i = 0; i < maxNumClusters; ++i) {
+                if (bagsPerCluster.get(i).numInstances() > 0)
+                    collection.add(new ParallelizeComputeCentroid(i, bagsPerCluster.get(i)));
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            try {
+                List<Future<Map<Integer, Instance>>> futures = executor.invokeAll(collection);
+                for (Future<Map<Integer, Instance>> future : futures) {
+                    Map<Integer, Instance> result = future.get();
+                    for (Map.Entry<Integer, Instance> r : result.entrySet()) {
+                        centroids.put(r.getKey(), r.getValue());
+                    }
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            executor.shutdown();
+        } else {
+            for (int i = 0; i < maxNumClusters; ++i) {
+                if (bagsPerCluster.get(i).numInstances() > 0)
+                    centroids.put(i, computeCentroid(bagsPerCluster.get(i)));
+            }
         }
-        executor.shutdown();
 
         return centroids;
     }
 
-    private static class ParallelizeComputeCentroid implements Callable<Map<Integer, Instance>> {
+    private class ParallelizeComputeCentroid implements Callable<Map<Integer, Instance>> {
         Instances cluster;
         Integer idx;
         ParallelizeComputeCentroid(Integer idx, Instances cluster) {
@@ -65,7 +83,7 @@ public class DatasetCentroids {
         }
     }
 
-    public static Instance computeCentroid(Instances members) {
+    public Instance computeCentroid(Instances members) {
         int numInstAttributes = members.get(0).relationalValue(1).numAttributes();
 
         Instances aux = new Instances(members.get(0).relationalValue(1));
@@ -79,5 +97,14 @@ public class DatasetCentroids {
         }
 
         return new DenseInstance(1.0D, means);
+    }
+
+    public double[] distanceToCentroids(Map<Integer, Instance> centroids, int InstanceIdx) {
+        double[] distances = new double[maxNumClusters];
+        for (int i = 0; i < maxNumClusters; ++i) {
+            if (centroids.containsKey(i))
+                distances[i] = distanceFunction.distance(instances.get(i), centroids.get(i));
+        }
+        return distances;
     }
 }

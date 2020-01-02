@@ -20,11 +20,11 @@ public class DBCV {
     private double[][] distancesMatrix;
     private int maxNumClusters;
 
-    public DBCV(Instances instances, DistanceFunction distanceFunction, int maxNumClusters, int numThreads) {
+    public DBCV(Instances instances, DistanceFunction distanceFunction, int maxNumClusters, boolean parallelize) {
         this.instances = instances;
         this.maxNumClusters = maxNumClusters;
         DistancesMatrix dm = new DistancesMatrix();
-        distancesMatrix = dm.compute(instances, numThreads, distanceFunction);
+        distancesMatrix = dm.compute(instances, distanceFunction, parallelize);
     }
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {

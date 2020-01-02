@@ -2,6 +2,7 @@ package miclustering.algorithms;
 
 import miclustering.distances.HausdorffDistance;
 import miclustering.utils.DatasetCentroids;
+import miclustering.utils.LoadByName;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
 import weka.classifiers.rules.DecisionTableHashKey;
 import weka.clusterers.NumberOfClustersRequestable;
@@ -22,8 +23,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
     private int maxIterations = 500;
     private int initializationMethod = 0;
     DistanceFunction distFunction = new HausdorffDistance();
-    int executionSlots = 1;
+    private DatasetCentroids datasetCentroids;
     private boolean showStdDevs = false;
+    private boolean parallelize = true;
 
     Instances startingPoints;
     Map<Integer, Instance> centroids;
@@ -79,6 +81,8 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
             }
         }
 
+        datasetCentroids = new DatasetCentroids(instances, numClusters, distFunction);
+
         clusterAssignments = new ArrayList<>(instances.numInstances());
         Instances initBags = new Instances(instances);
         if (this.initializationMethod == 0) {
@@ -95,7 +99,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         Instances[] bagsPerCluster = new Instances[currentNClusters];
         while (!converged) {
             this.iterations++;
-            List<Integer> newAssignation = oneStepKMeans.assignBagsToClusters(centroids);
+            List<Integer> newAssignation = oneStepKMeans.assignBagsToClusters(centroids, parallelize);
             converged = clusterAssignments.equals(newAssignation);
             clusterAssignments = newAssignation;
 
@@ -134,7 +138,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
                 }
             }
         }
-        clusterAssignments = oneStepKMeans.evaluate(clusterAssignments);
+        clusterAssignments = oneStepKMeans.evaluate(clusterAssignments, parallelize);
 
         if (showStdDevs) {
             clusterStdDevs = new Instances(instances.get(0).relationalValue(1), currentNClusters);
@@ -193,7 +197,11 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         int emptyClusterCount = 0;
         centroids = new HashMap<>(numClusters);
 
-        ExecutorService executor = Executors.newFixedThreadPool(executionSlots);
+        ExecutorService executor;
+        if (parallelize)
+            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        else
+            executor = Executors.newFixedThreadPool(1);
         Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(numClusters);
         for (int i = 0; i < currentNClusters; ++i) {
             if (clusters[i].numInstances() == 0)
@@ -234,7 +242,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
     }
 
     protected Instance computeCentroid(Instances members) {
-        Instance centroid = DatasetCentroids.computeCentroid(members);
+        Instance centroid = datasetCentroids.computeCentroid(members);
         centroid.setDataset(members.get(0).relationalValue(1));
         return centroid;
     }
@@ -348,11 +356,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         return this.distFunction;
     }
 
-    public void setDistanceFunction(DistanceFunction df, String[] options) throws Exception {
-        this.distFunction = df;
-        distFunction.setOptions(options);
-    }
-
     public String fastDistanceCalcTipText() {
         return "Uses cut-off values for speeding up distance calculation, but suppresses also the calculation and output of the within cluster sum of squared errors/sum of miclustering.distances.";
     }
@@ -381,23 +384,9 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         }
 
         String distFunctionClass = Utils.getOption('A', options);
-        if (distFunctionClass.length() != 0) {
-            String[] distFunctionClassSpec = Utils.splitOptions(distFunctionClass);
-            if (distFunctionClassSpec.length == 0) {
-                throw new Exception("Invalid DistanceFunction specification string.");
-            }
+        distFunction = LoadByName.distanceFunction(distFunctionClass, options);
 
-            String className = distFunctionClassSpec[0];
-            distFunctionClassSpec[0] = "";
-            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distFunctionClassSpec), options);
-        } else {
-            this.setDistanceFunction(new HausdorffDistance(), options);
-        }
-
-        String slotsS = Utils.getOption("num-slots", options);
-        if (slotsS.length() > 0) {
-            executionSlots = Integer.parseInt(slotsS);
-        }
+        parallelize = Utils.getFlag("parallelize", options);
 
         super.setOptions(options);
         Utils.checkForRemainingOptions(options);
@@ -415,7 +404,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         result.add((this.distFunction.getClass().getName() + " " + Utils.joinOptions(this.distFunction.getOptions())).trim());
         result.add("-I");
         result.add(String.valueOf(this.getMaxIterations()));
-        result.add("-num-slots " + executionSlots);
         Collections.addAll(result, super.getOptions());
         return result.toArray(new String[0]);
     }

@@ -8,18 +8,18 @@ import weka.core.Instances;
 import java.util.Arrays;
 import java.util.List;
 
-public class ClassEvaluation {
+public class ExternalEvaluation {
     private Instances instances;
     private int maxNumClusters;
     private int numClasses;
 
-    public ClassEvaluation(Instances instances, int maxNumClusters, int numClasses) {
+    public ExternalEvaluation(Instances instances, int maxNumClusters, int numClasses) {
         this.instances = instances;
         this.maxNumClusters = maxNumClusters;
         this.numClasses = numClasses;
     }
 
-    public ClassEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) {
+    public ExtEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int[][] confMatrix = new int[maxNumClusters][numClasses];
         for(int i = 0; i < clusterAssignments.size(); ++i) {
             Instance instance = instances.get(i);
@@ -36,7 +36,7 @@ public class ClassEvaluation {
         for(int i = 0; i < maxNumClusters + 1; ++i) {
             classToCluster[i] = (int)best[i];
         }
-        return new ClassEvalResult(confMatrix, classToCluster);
+        return new ExtEvalResult(confMatrix, classToCluster);
     }
 
     private static void mapClasses(int numClusters, int lev, int[][] counts, int[] bagsPerCluster, double[] current, double[] best, int error) {
@@ -99,7 +99,7 @@ public class ClassEvaluation {
         return purity / instances.numInstances();
     }
 
-    public double computeRandIndex(ClassEvalResult cer) {
+    public double computeRandIndex(ExtEvalResult cer) {
         int[] classToCluster = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
         double rand = 0;
@@ -111,7 +111,7 @@ public class ClassEvaluation {
         return rand / instances.numInstances();
     }
 
-    public double[] computePrecision(ClassEvalResult cer) {
+    public double[] computePrecision(ExtEvalResult cer) {
         int[] clusterToClass = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
         double[] precision = new double[clusterToClass.length - 1];
@@ -129,7 +129,7 @@ public class ClassEvaluation {
         return precision;
     }
 
-    public double[] computeRecall(ClassEvalResult cer) {
+    public double[] computeRecall(ExtEvalResult cer) {
         int[] clusterToClass = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
         double[] recall = new double[clusterToClass.length - 1];
@@ -147,7 +147,7 @@ public class ClassEvaluation {
         return recall;
     }
 
-    public double[] computeF1(ClassEvalResult cer, double[] precision, double[] recall) {
+    public double[] computeF1(ExtEvalResult cer, double[] precision, double[] recall) {
         int[] clusterToClass = cer.getClusterToClass();
         double[] f1 = new double[precision.length];
         for (int i = 0; i < precision.length; ++i){
@@ -157,7 +157,7 @@ public class ClassEvaluation {
         return f1;
     }
 
-    public double[] computeSpecificity(ClassEvalResult cer) {
+    public double[] computeSpecificity(ExtEvalResult cer) {
         int[] clusterToClass = cer.getClusterToClass();
         int[][] confMatrix = cer.getConfMatrix();
         double[] specificity = new double[clusterToClass.length - 1];
@@ -183,7 +183,7 @@ public class ClassEvaluation {
         return specificity;
     }
 
-    public double getMacroMeasure(ClassEvalResult cer, double[] measure, List<Integer> clusterAssignments, int[] bagsPerCluster) {
+    public static double getMacroMeasure(ExtEvalResult cer, double[] measure, List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int[] clusterToClass = cer.getClusterToClass();
         if (measure.length == 2)
             return measure[1];

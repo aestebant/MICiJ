@@ -1,6 +1,6 @@
 package miclustering.utils;
 
-import miclustering.evaluators.ClassEvalResult;
+import miclustering.evaluators.ExtEvalResult;
 import weka.core.Attribute;
 import weka.core.Utils;
 
@@ -21,7 +21,7 @@ public class PrintConfusionMatrix {
         return result.toString();
     }
 
-    public static String severalLines(ClassEvalResult cer, int[] bagsPerCluster, Attribute classAtt) {
+    public static String severalLines(ExtEvalResult cer, int[] bagsPerCluster, Attribute classAtt) {
         int maxNumClusters = bagsPerCluster.length;
         int actualNumClusters = maxNumClusters;
         for (int value : bagsPerCluster) {
