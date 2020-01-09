@@ -26,8 +26,10 @@ public class HausdorffDistance extends MIDistance {
         double[] minByRows = null;
         if (type == MAXMIN || type == MINMIN || type == MEANMIN) {
             minByRows = new double[n1];
-            for (int i = 0; i < n1; ++i)
+            for (int i = 0; i < n1; ++i) {
+                distances[i][i] = Double.MAX_VALUE;
                 minByRows[i] = new Min().evaluate(distances[i]);
+            }
         }
 
         double result = 0D;
@@ -41,6 +43,7 @@ public class HausdorffDistance extends MIDistance {
         } else if (type == MEAN) {
             VectorialMean mean = new VectorialMean(n2);
             for (int i = 0; i < n1; ++i) {
+                    distances[i][i] = new Mean().evaluate(distances[i]);
                     mean.increment(distances[i]);
             }
             result = new Mean().evaluate(mean.getResult());
@@ -99,5 +102,9 @@ public class HausdorffDistance extends MIDistance {
     @Override
     public String[] getOptions() {
         return new String[0];
+    }
+
+    public int getType() {
+        return type;
     }
 }

@@ -1,5 +1,6 @@
 package miclustering.utils;
 
+import miclustering.distances.HausdorffDistance;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -12,20 +13,27 @@ import java.util.concurrent.*;
 public class DistancesMatrix {
 
     private DistanceFunction distanceFunction;
+    private boolean isDistance = false;
 
      public double[][] compute(Instances instances, DistanceFunction distanceFunction, boolean parallelize) {
         int numBags = instances.numInstances();
         this.distanceFunction = distanceFunction;
+        if (distanceFunction instanceof HausdorffDistance) {
+            // De momento sólo se ha implementado esa métrica que sea distancia, el resto son disimilaridades
+            if (((HausdorffDistance) distanceFunction).getType() == HausdorffDistance.MAXMIN)
+                isDistance = true;
+        }
 
         double[][] distances = new double[numBags][numBags];
 
-        //TODO LA MATRIZ HABRÍA QUE CALCULARLA ENTERA SI LA MÉTRICA DE DISTANCIA NO ES SIMÉTRICA
         if (parallelize) {
             ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
             Collection<Callable<Double[]>> collection = new ArrayList<>(numBags);
             for (int i = 0; i < numBags; ++i) {
-                for (int j = i + 1; j < numBags; ++j) {
-                    collection.add(new Wrapper(instances.get(i), instances.get(j), i, j));
+                int init = isDistance ? i + 1 : 0;
+                for (int j = init; j < numBags; ++j) {
+                    if (i != j)
+                        collection.add(new Wrapper(instances.get(i), instances.get(j), i, j));
                 }
             }
             try {
@@ -33,7 +41,8 @@ public class DistancesMatrix {
                 for (Future<Double[]> future : futures) {
                     Double[] result = future.get();
                     distances[result[0].intValue()][result[1].intValue()] = result[2];
-                    distances[result[1].intValue()][result[0].intValue()] = result[2];
+                    if (isDistance)
+                        distances[result[1].intValue()][result[0].intValue()] = result[2];
                 }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -41,9 +50,13 @@ public class DistancesMatrix {
             executor.shutdown();
         }else {
             for (int i = 0; i < numBags; ++i) {
-                for (int j = i + 1; j < numBags; ++j) {
-                    distances[i][j] = distanceFunction.distance(instances.get(i), instances.get(j));
-                    distances[j][i] = distances[i][j];
+                int init = isDistance ? i + 1 : 0;
+                for (int j = init; j < numBags; ++j) {
+                    if (i != j) {
+                        distances[i][j] = distanceFunction.distance(instances.get(i), instances.get(j));
+                        if (isDistance)
+                            distances[j][i] = distances[i][j];
+                    }
                 }
             }
         }

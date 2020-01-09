@@ -25,6 +25,7 @@ public abstract class MIDistance implements DistanceFunction {
                 double[] i1Array = ProcessDataset.instanceToArray(i1.get(i));
                 double[] i2Array = ProcessDataset.instanceToArray(i2.get(j));
                 result[i][j] = baseDistance.compute(i1Array, i2Array);
+                result[j][i] = result[i][j];
             }
         }
 
