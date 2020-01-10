@@ -9,7 +9,6 @@ import weka.core.neighboursearch.PerformanceStats;
 import java.util.*;
 
 public abstract class MIDistance implements DistanceFunction {
-    private final Map<Set<Integer>, Double> cachedDistances = new HashMap<>();
 
     protected abstract double computeDistance(Instances i1, Instances i2);
 
@@ -25,7 +24,6 @@ public abstract class MIDistance implements DistanceFunction {
                 double[] i1Array = ProcessDataset.instanceToArray(i1.get(i));
                 double[] i2Array = ProcessDataset.instanceToArray(i2.get(j));
                 result[i][j] = baseDistance.compute(i1Array, i2Array);
-                result[j][i] = result[i][j];
             }
         }
 
@@ -34,26 +32,14 @@ public abstract class MIDistance implements DistanceFunction {
 
     @Override
     public double distance(Instance bag1, Instance bag2, PerformanceStats performanceStats) throws Exception {
-        Instances i1 = ProcessDataset.extractInstances(bag1);
-        Instances i2 = ProcessDataset.extractInstances(bag2);
+        ProcessDataset pd = new ProcessDataset();
+        Instances i1 = pd.extractInstances(bag1);
+        Instances i2 = pd.extractInstances(bag2);
 
         if (i1.numAttributes() != i2.numAttributes()) {
             throw (new Exception("Number of attributes is not equals"));
         }
 
-        /*Set<Integer> key = new HashSet<>(2);
-        key.add(bag1.hashCode());
-        key.add(bag2.hashCode());
-        double distance;
-        if (cachedDistances.containsKey(key)) {
-            distance = cachedDistances.get(key);
-            //System.out.println("La caché ha funcionado");
-        } else {
-            distance = computeDistance(i1, i2);
-            synchronized (cachedDistances) {
-                cachedDistances.put(key, distance);
-            }
-        }*/
         double distance = computeDistance(i1, i2);
 
         if (performanceStats != null)

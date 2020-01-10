@@ -40,6 +40,7 @@ public class OneStepKMeans {
         this.distanceFunction = distanceFunction;
         this.numClusters = numClusters;
         this.checkValidSolution = checkValidSolution;
+        datasetCentroids = new DatasetCentroids(dataset, numClusters, distanceFunction);
     }
 
     public List<Integer> evaluate (List<Integer> clusterAssignments, boolean parallelize) {

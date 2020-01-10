@@ -23,7 +23,7 @@ public class ProcessDataset {
         return arff.getData();
     }
 
-    public static Instances extractInstances(Instance bag) {
+    public Instances extractInstances(Instance bag) {
         boolean isBag = false;
         try {
             isBag = bag.attribute(1).isRelationValued();

@@ -36,7 +36,7 @@ public class DaviesBouldinIndex {
         for (int i = 0; i < maxNumClusters; ++i)
             sumDist[i] /= bagsPerCluster[i];
 
-        double [][] dividend = new double[maxNumClusters][maxNumClusters];
+        double[][] dividend = new double[maxNumClusters][maxNumClusters];
         double[][] divisor = new double[maxNumClusters][maxNumClusters];
         for (int i = 0; i < maxNumClusters; ++i) {
             dividend[i][i] = Double.NEGATIVE_INFINITY;

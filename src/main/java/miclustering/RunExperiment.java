@@ -1,13 +1,12 @@
 package miclustering;
 
 import miclustering.algorithms.MIClusterer;
-import miclustering.evaluators.ExtEvalResult;
+import miclustering.distances.HausdorffDistance;
 import miclustering.evaluators.ClusterEvaluation;
+import miclustering.evaluators.ExtEvalResult;
 import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
-import miclustering.utils.ProcessDataset;
 import weka.clusterers.Clusterer;
-import weka.core.Instances;
 import weka.core.Utils;
 
 import java.io.File;
@@ -37,8 +36,6 @@ public class RunExperiment {
         setExperiments();
         setSaveResults();
 
-        String evaluationConfig = "-c last";
-
         int nConfigs = 0;
         for (Map.Entry<String, List<String>> e: clusterConfig.entrySet()) {
             nConfigs += e.getValue().size();
@@ -61,10 +58,19 @@ public class RunExperiment {
                         System.out.println(control);
 
                         Clusterer clusterer = LoadByName.clusterer("miclustering.algorithms." + c);
-                        Instances dataset = ProcessDataset.readArff("datasets/" + d + z + ".arff");
+                        try {
+                            ((MIClusterer) clusterer).setOptions(Utils.splitOptions(config));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        //Instances dataset = ProcessDataset.readArff("datasets/" + d + z + ".arff");
+                        String pathDataset = "datasets/" + d + z + ".arff";
+                        int type = ((HausdorffDistance) ((MIClusterer) clusterer).getDistanceFunction()).getType();
+                        String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -A HausdorffDistance -hausdorff-type " + type;
+                        System.out.println(evalOptions);
                         ClusterEvaluation eval = new ClusterEvaluation();
                         try {
-                            eval.setOptions(Utils.splitOptions(evaluationConfig));
+                            eval.setOptions(Utils.splitOptions(evalOptions));
                             eval.evaluateClusterer(clusterer, true);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -72,7 +78,7 @@ public class RunExperiment {
 
                         String distance = ((MIClusterer)clusterer).getDistanceFunction().toString();
                         int actualNClusters = eval.getActualNumClusters();
-                        int clusteredBags = dataset.numInstances()-eval.getUnclusteredInstances();
+                        int clusteredBags = eval.getInstances().numInstances()-eval.getUnclusteredInstances();
                         int unclusteredBags = eval.getUnclusteredInstances();
                         double rmsstd = eval.getRmssd();
                         double silhouette = eval.getSilhouette();
@@ -118,7 +124,6 @@ public class RunExperiment {
     private static void setExperiments() {
         dataset = new String[]{
 //                "component_relational",
-//                "eastwest_relational",
                 "elephant_relational",
                 "fox_relational",
                 "tiger_relational",
@@ -131,7 +136,8 @@ public class RunExperiment {
 //                "process_relational",
 //                "suramin_relational",
 //                "trx_relational",
-//                "westeast_relational",
+                "eastwest_relational",
+                "westeast_relational",
 //                "animals_relational"
         };
 
@@ -150,7 +156,7 @@ public class RunExperiment {
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                kMeansConfig.add("-N " + k + " -V -hausdorff-type " + hausdorff);
+                kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();

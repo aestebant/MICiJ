@@ -252,7 +252,6 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
         if (instances.contains(bag))
             return clusterAssignments.get(bag.dataset().indexOf(bag));
         else {
-            System.out.println("La caché no ha funcionado");
             double[] distances = oneStepKMeans.computeAssignation(centroids, bag);
             Min getMin = new Min();
             double min = getMin.evaluate(distances);
