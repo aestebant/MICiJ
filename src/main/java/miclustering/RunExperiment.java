@@ -142,8 +142,8 @@ public class RunExperiment {
         };
 
         standardization = new String[]{
-                "",
-                "-z1",
+//                "",
+//                "-z1",
                 "-z5"
         };
 
@@ -155,8 +155,9 @@ public class RunExperiment {
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
-            for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff);
+            for (String hausdorff : new ArrayList<>(Arrays.asList("0"))) {
+                for (Integer seed : new ArrayList<>(Arrays.asList(12348, 82, 497, 1311, 65)))
+                    kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff + " -S " + seed);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();

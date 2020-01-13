@@ -34,13 +34,12 @@ public class FastTotalWithinClusterValidation {
     public double selectorModification(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         double ftwcv = computeIndex(clusterAssignments, bagsPerCluster);
 
-        double e = 0D;
+        int e = 0;
         for (int count : bagsPerCluster) {
             if (count > 0)
                 e++;
         }
-        e /= maxNumClusters;
-        if (e == 1D) {
+        if (e == maxNumClusters) {
             if (ftwcv > max)
                 max = ftwcv;
             if (ftwcv < min)
