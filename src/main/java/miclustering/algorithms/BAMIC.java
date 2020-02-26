@@ -7,7 +7,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class BAMIC extends MISimpleKMeans {
+public class BAMIC extends MIKMeans {
 
     @Override
     protected void randomInit(Instances data) throws Exception {

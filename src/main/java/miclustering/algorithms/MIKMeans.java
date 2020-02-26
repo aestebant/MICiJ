@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer, NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
+public class MIKMeans extends RandomizableClusterer implements MIClusterer, NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
     int numClusters = 2;
     private int currentNClusters;
     private int maxIterations = 500;
@@ -39,7 +39,7 @@ public class MISimpleKMeans extends RandomizableClusterer implements MIClusterer
     private Instances instances;
     private OneStepKMeans oneStepKMeans;
 
-    public MISimpleKMeans() {
+    public MIKMeans() {
         this.m_SeedDefault = 10;
         this.setSeed(this.m_SeedDefault);
     }
