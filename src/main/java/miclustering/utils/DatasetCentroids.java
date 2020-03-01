@@ -30,7 +30,8 @@ public class DatasetCentroids {
             bagsPerCluster.put(cluster, new Instances(instances, 0));
         }
         for (int i = 0; i < instances.numInstances(); ++i) {
-            bagsPerCluster.get(clusterAssignments.get(i)).add(instances.get(i));
+            if (clusterAssignments.get(i) > -1)
+                bagsPerCluster.get(clusterAssignments.get(i)).add(instances.get(i));
         }
         return bagsPerCluster;
     }
