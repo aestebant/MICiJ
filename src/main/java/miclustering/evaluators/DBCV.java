@@ -42,7 +42,13 @@ public class DBCV {
         for (int i = 0; i < maxNumClusters; ++i)
             weights[i] = (double) bagsPerCluster[i] / instances.numInstances();
         Mean mean = new Mean();
-        return mean.evaluate(vc, weights);
+        double result;
+        try {
+            result = mean.evaluate(vc, weights);
+        } catch (Exception e) {
+            result = 0;
+        }
+        return result;
     }
 
     private double[] allPointsCoreDist(List<Integer> clusterAssignments, int[] bagsPerCluster) {
@@ -50,6 +56,8 @@ public class DBCV {
         double[] result = new double[clusterAssignments.size()];
         for (int i = 0; i < clusterAssignments.size(); ++i) {
             int clusterIdx = clusterAssignments.get(i);
+            if (clusterIdx < 0)
+                break;
             for (int j = 0; j < clusterAssignments.size(); ++j) {
                 if (i != j && clusterIdx == clusterAssignments.get(j)) {
                     result[i] += FastMath.pow(1D / distancesMatrix[i][j], d);
@@ -75,6 +83,8 @@ public class DBCV {
         }
         for (int i = 0; i < clusterAssignments.size(); ++i) {
             int clusterIdx = clusterAssignments.get(i);
+            if (clusterIdx < 0)
+                break;
             g.get(clusterIdx).addVertex(i);
             for (int j = i + 1; j < clusterAssignments.size(); ++j) {
                 if (clusterIdx == clusterAssignments.get(j)) {

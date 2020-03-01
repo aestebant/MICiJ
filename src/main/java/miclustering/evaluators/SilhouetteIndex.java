@@ -30,7 +30,7 @@ public class SilhouetteIndex {
         for (int point = 0; point < numInstances; ++point) {
             double[] meanDistToCluster = new double[maxNumClusters];
             for (int other = 0; other < numInstances; ++other) {
-                if (other != point && clusterAssignments.get(other) != -1)
+                if (other != point && clusterAssignments.get(other) > -1)
                     meanDistToCluster[clusterAssignments.get(other)] += distances[point][other];
             }
             for (int c = 0; c < maxNumClusters; ++c) {
@@ -40,7 +40,7 @@ public class SilhouetteIndex {
                     meanDistToCluster[c] /= bagsPerCluster[c];
             }
             double aPoint = 0;
-            if (clusterAssignments.get(point) != -1)
+            if (clusterAssignments.get(point) > -1)
                 aPoint = meanDistToCluster[clusterAssignments.get(point)];
 
             List<Double> possibleB = new ArrayList<>(maxNumClusters - 1);

@@ -30,7 +30,8 @@ public class RMSStdDev {
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, Map<Integer, Instance> centroids) {
         double rmssd = 0D;
         for (int i = 0; i < instances.numInstances(); ++i) {
-            rmssd += FastMath.pow(distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i))), 2);
+            if (clusterAssignments.get(i) > -1)
+                rmssd += FastMath.pow(distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i))), 2);
         }
         double divisor = 0D;
         for (int i = 0; i < maxNumClusters; ++i) {

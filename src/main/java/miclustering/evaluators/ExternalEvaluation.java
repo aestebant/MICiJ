@@ -7,6 +7,7 @@ import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ExternalEvaluation {
     private Instances instances;
@@ -21,10 +22,14 @@ public class ExternalEvaluation {
 
     public ExtEvalResult computeConfusionMatrix(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         int[][] confMatrix = new int[maxNumClusters][numClasses];
+        int[] unnasigned = new int[numClasses];
         for(int i = 0; i < clusterAssignments.size(); ++i) {
             Instance instance = instances.get(i);
-            if (clusterAssignments.get(i) != -1 && !instance.classIsMissing()) {
-                confMatrix[clusterAssignments.get(i)][(int) instance.classValue()]++;
+            if (!instance.classIsMissing()) {
+                if (clusterAssignments.get(i) > -1)
+                    confMatrix[clusterAssignments.get(i)][(int) instance.classValue()]++;
+                else
+                    unnasigned[(int) instance.classValue()]++;
             }
         }
         double[] best = new double[maxNumClusters + 1];
@@ -36,7 +41,7 @@ public class ExternalEvaluation {
         for(int i = 0; i < maxNumClusters + 1; ++i) {
             classToCluster[i] = (int)best[i];
         }
-        return new ExtEvalResult(confMatrix, classToCluster);
+        return new ExtEvalResult(confMatrix, classToCluster, unnasigned);
     }
 
     private static void mapClasses(int numClusters, int lev, int[][] counts, int[] bagsPerCluster, double[] current, double[] best, int error) {
@@ -95,7 +100,8 @@ public class ExternalEvaluation {
             if (Arrays.stream(confMatrix[i]).max().isPresent())
                 purity += Arrays.stream(confMatrix[i]).max().getAsInt();
         }
-        // Al dividir por el nº total de instancias también estamos penalizando si hay algunas clasificadas como ruido
+        // Al dividir por el nº total de bolsas también estamos penalizando si hay algunas clasificadas como ruido
+        // Se asume que todas las bolsas tienen clase
         return purity / instances.numInstances();
     }
 
@@ -107,7 +113,8 @@ public class ExternalEvaluation {
             if (classToCluster[i] > -1)
                 rand += confMatrix[i][classToCluster[i]];
         }
-        // Al dividir por el nº total de instancias también estamos penalizando si hay algunas clasificadas como ruido
+        // Al dividir por el nº bolsas de instancias también estamos penalizando si hay algunas clasificadas como ruido
+        // Se asume que todas las bolsas tienen clase
         return rand / instances.numInstances();
     }
 
@@ -141,6 +148,7 @@ public class ExternalEvaluation {
                     if (j != i)
                         fn += confMatrix[j][clusterToClass[i]];
                 }
+                fn += cer.getUnnasigned()[clusterToClass[i]];
                 recall[clusterToClass[i]] = (double) tp / (tp + fn);
             }
         }
@@ -184,12 +192,16 @@ public class ExternalEvaluation {
     }
 
     public static double getMacroMeasure(ExtEvalResult cer, double[] measure, List<Integer> clusterAssignments, int[] bagsPerCluster) {
-        int[] clusterToClass = cer.getClusterToClass();
-        if (measure.length == 2)
-            return measure[1];
+        int[] clusterToClass = Arrays.copyOfRange(cer.getClusterToClass(), 0, cer.getClusterToClass().length - 1);
+        // Se asume que la clase positiva es la segunda declarada en el fichero ARFF (su índice es 1).
+        boolean binaryClassification = Arrays.stream(clusterToClass).summaryStatistics().getMax() == 1;
+        if (binaryClassification)
+            return measure[Arrays.stream(clusterToClass).boxed().collect(Collectors.toList()).indexOf(1)];
         else {
-            double[] weights = new double[clusterToClass.length - 1];
-            for (int i = 0; i < clusterToClass.length - 1; ++i) {
+            double[] weights = new double[clusterToClass.length];
+            if (Arrays.stream(weights).sum() <= 0)
+                return Double.NaN;
+            for (int i = 0; i < clusterToClass.length; ++i) {
                 if (clusterToClass[i] > -1) {
                     weights[clusterToClass[i]] = (double) bagsPerCluster[i] / clusterAssignments.size();
                 }

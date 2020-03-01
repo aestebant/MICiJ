@@ -31,8 +31,10 @@ public class DaviesBouldinIndex {
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, Map<Integer, Instance> centroids) {
         double[] sumDist = new double[maxNumClusters];
-        for (int i = 0; i < instances.numInstances(); ++i)
-            sumDist[clusterAssignments.get(i)] += distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i)));
+        for (int i = 0; i < instances.numInstances(); ++i) {
+            if (clusterAssignments.get(i) > -1)
+                sumDist[clusterAssignments.get(i)] += distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i)));
+        }
         for (int i = 0; i < maxNumClusters; ++i)
             sumDist[i] /= bagsPerCluster[i];
 

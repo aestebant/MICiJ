@@ -73,7 +73,18 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         }
 
         clusterer.buildClusterer(processData);
-        maxNumClusters = clusterer.numberOfClusters();
+        maxNumClusters = Math.max(clusterer.numberOfClusters(), maxNumClusters);
+        rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
+        sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+        silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
+        xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
+        db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+        dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
+        if (classAtt > -1)
+            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
+        twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+        ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
+        datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
         List<Integer> clusterAssignments = getClusterAssignments(clusterer, processData);
         fullEvaluation(clusterAssignments, parallelize);
     }
@@ -287,8 +298,10 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
             }
             result.append("Incorrectly clustered instances :\t")
                     .append(extEvalResult.getClusterToClass()[maxNumClusters])
+                    .append(" + ")
+                    .append(Arrays.toString(extEvalResult.getUnnasigned()))
                     .append("\t(")
-                    .append((double) extEvalResult.getClusterToClass()[maxNumClusters] / instances.numInstances() * 100.0D)
+                    .append((double) (extEvalResult.getClusterToClass()[maxNumClusters] + Arrays.stream(extEvalResult.getUnnasigned()).sum()) / instances.numInstances() * 100.0D)
                     .append(" %)\n");
         }
 
@@ -448,6 +461,8 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
         Utils.checkForRemainingOptions(options);
 
+        //TODO PERNSAR UNA FORMA DE LIDIAR CON LA DIFERENCIA ENTRE NUM DE CLUSTERS
+        /*
         rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
         sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
         silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
@@ -459,6 +474,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
         ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
         datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        */
     }
 
     private void setClass(String classString) {
