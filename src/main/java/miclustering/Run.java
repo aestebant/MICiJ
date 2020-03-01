@@ -13,38 +13,50 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
-//                "animals_relational"
-//                "component_relational",
-                "eastwest_relational",
-//                "elephant_relational",
-//                "fox_relational",
-//                "function_relational",
-//                "musk1_relational",
-//                "musk2_relational",
-//                "mutagenesis3_atoms_relational",
-//                "mutagenesis3_bonds_relational",
-//                "mutagenesis3_chains_relational",
-//                "process_relational",
-//                "suramin_relational",
-//                "tiger_relational",
-//                "trx_relational",
-//                "westeast_relational"
+                "BirdsBrownCreeper",
+//                "BirdsChestnut-backedChickadee",
+//                "BirdsDark-eyedJunco",
+//                "BiocreativeComponent",
+//                "BiocreativeFunction",
+//                "BiocreativeProcess",
+//                "Harddrive2",
+//                "ImageElephant",
+//                "ImageFox",
+//                "ImageTiger",
+//                "Messidor",
+//                "mutagenesis3_atoms",
+//                "mutagenesis3_bonds",
+//                "mutagenesis3_chains",
+//                "Newsgroups1",
+//                "Newsgroups2",
+//                "Newsgroups3",
+//                "suramin",
+//                "DirectionEastwest",
+//                "Thioredoxin",
+//                "UCSBBreastCancer",
+//                "Web1",
+//                "Web2",
+//                "Web3",
+//                "Graz02bikes",
+//                "Graz02car",
+//                "Graz02people",
+//                "standardMI_Maron"
         };
 
         String[] standardization = {
-                "",
+//                "",
 //                "-z4",
-//                "-z5"
+                "-z5"
         };
 
         String[] clustering = {
-//                "MIDBSCAN",
+                "MIDBSCAN",
 //                "MISimpleKMeans",
-                "BAMIC",
+//                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 2.5 -M 3 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIDBSCAN", " -E 0.1 -M 2 -A HausdorffDistance -hausdorff-type 1");
         options.put("MISimpleKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
         options.put("BAMIC", "-A HausdorffDistance -hausdorff-type 0");
         options.put("MIOPTICS", "");
@@ -69,7 +81,7 @@ public class Run {
 
                     ClusterEvaluation evaluation = new ClusterEvaluation();
                     String pathDataset = "datasets/" + d + z + ".arff";
-                    String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -p -A HausdorffDistance -hausdorff-type 0";
+                    String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -p -A HausdorffDistance -hausdorff-type 1";
                     try {
                         evaluation.setOptions(Utils.splitOptions(evalOptions));
                         evaluation.evaluateClusterer(clusterer, true);

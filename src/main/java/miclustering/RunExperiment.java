@@ -63,7 +63,7 @@ public class RunExperiment {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        //Instances dataset = ProcessDataset.readArff("datasets/" + d + z + ".arff");
+
                         String pathDataset = "datasets/" + d + z + ".arff";
                         int type = ((HausdorffDistance) ((MIClusterer) clusterer).getDistanceFunction()).getType();
                         String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -A HausdorffDistance -hausdorff-type " + type;
@@ -100,11 +100,11 @@ public class RunExperiment {
                                 String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(rmsstd), String.valueOf(silhouette),
                                 String.valueOf(xb), String.valueOf(db), String.valueOf(sdbw), String.valueOf(dbcv),
                                 String.valueOf(entropy), String.valueOf(purity), String.valueOf(rand), String.valueOf(precision),
-                                String.valueOf(recall), String.valueOf(f1), String.valueOf(specificity), PrintConfusionMatrix.singleLine(cer.getConfMatrix()),
+                                String.valueOf(recall), String.valueOf(f1), String.valueOf(specificity), PrintConfusionMatrix.singleLine(cer),
                                 String.valueOf(time), reportTitle);
                         try {
-                            reportFileWriter.flush();
                             reportFileWriter.write(report + "\n");
+                            reportFileWriter.flush();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -123,22 +123,37 @@ public class RunExperiment {
 
     private static void setExperiments() {
         dataset = new String[]{
-//                "component_relational",
-                "elephant_relational",
-                "fox_relational",
-                "tiger_relational",
-                "mutagenesis3_atoms_relational",
-                "mutagenesis3_bonds_relational",
-                "mutagenesis3_chains_relational",
-//                "function_relational",
-                "musk1_relational",
-                "musk2_relational",
-//                "process_relational",
-//                "suramin_relational",
-//                "trx_relational",
-                "eastwest_relational",
-                "westeast_relational",
-//                "animals_relational"
+                "BirdsBrownCreeper",
+                "BirdsChestnut-backedChickadee",
+                "BirdsHammondsFlycatcher",
+                "BiocreativeComponent",
+                "BiocreativeFunction",
+                "BiocreativeProcess",
+                "CorelAfrican",
+                "CorelAntique",
+                "CorelBattleships",
+                "Harddrive1",
+                "ImageElephant",
+                "ImageFox",
+                "ImageTiger",
+                "Messidor",
+                "mutagenesis3_atoms",
+                "mutagenesis3_bonds",
+                "mutagenesis3_chains",
+                "Newsgroups1",
+                "Newsgroups2",
+                "Newsgroups3",
+                "suramin",
+                "DirectionEastwest",
+                "Thioredoxin",
+                "UCSBBreastCancer",
+                "Web1",
+                "Web2",
+                "Web3",
+                "Graz02bikes",
+                "Graz02car",
+                "Graz02people",
+                "standardMI_Maron"
         };
 
         standardization = new String[]{
@@ -148,31 +163,30 @@ public class RunExperiment {
         };
 
         clustering = new String[]{
-//                "MIDBSCAN",
-                "MISimpleKMeans",
+                "MIDBSCAN",
+                "MIKMeans",
                 "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
-            for (String hausdorff : new ArrayList<>(Arrays.asList("0"))) {
-                for (Integer seed : new ArrayList<>(Arrays.asList(12348, 82, 497, 1311, 65)))
-                    kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff + " -S " + seed);
+            for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
+                kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
-        for (double eps : new double[]{0.6, 0.9, 1.2, 1.5}) {
-            for (int minPts = 2; minPts <= 4; ++minPts) {
-                for (String hausdorff : new ArrayList<>(Arrays.asList("minimal", "maximal", "average"))) {
-                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -hausdorff-type " + hausdorff);
+        for (double eps : new double[]{0.1, 0.3, 0.5, 0.7}) {
+            for (int minPts = 2; minPts <= 8; minPts+=2) {
+                for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
+                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -A HausdorffDistance -hausdorff-type " + hausdorff);
                 }
             }
         }
 
         clusterConfig = new HashMap<>();
-        clusterConfig.put("MISimpleKMeans", kMeansConfig);
+        clusterConfig.put("MIKMeans", kMeansConfig);
         clusterConfig.put("BAMIC", kMeansConfig);
-//        clusterConfig.put("MIDBSCAN", dbscanConfig);
+        clusterConfig.put("MIDBSCAN", dbscanConfig);
     }
 
     private static void setSaveResults() {
