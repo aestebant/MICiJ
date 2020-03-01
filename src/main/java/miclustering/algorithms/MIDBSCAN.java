@@ -157,10 +157,13 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
             this.setMinPoints(Integer.parseInt(minPoints));
         }
 
-        String distance = Utils.getOption('A', options);
-        distFunction = LoadByName.distanceFunction(distance, options);
+        String distFunctionClass = Utils.getOption('A', options);
+        distFunction = LoadByName.distanceFunction(distFunctionClass, options);
 
         printClusterAssignments = Utils.getFlag("output-clusters", options);
+
+        super.setOptions(options);
+        Utils.checkForRemainingOptions(options);
     }
 
     public String[] getOptions() {

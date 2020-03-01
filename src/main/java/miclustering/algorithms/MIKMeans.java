@@ -400,7 +400,7 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
         }
         result.add("-N" + numClusters);
         result.add("-A");
-        result.add((this.distFunction.getClass().getName() + " " + Utils.joinOptions(this.distFunction.getOptions())).trim());
+        result.add((distFunction.getClass().getName() + " " + Utils.joinOptions(distFunction.getOptions())).trim());
         result.add("-I");
         result.add(String.valueOf(this.getMaxIterations()));
         Collections.addAll(result, super.getOptions());
