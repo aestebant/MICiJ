@@ -1,7 +1,6 @@
 package miclustering;
 
 import miclustering.algorithms.MIClusterer;
-import miclustering.distances.HausdorffDistance;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.evaluators.ExtEvalResult;
 import miclustering.utils.LoadByName;
@@ -57,17 +56,15 @@ public class RunExperiment {
                                 " | standardization: " + z;
                         System.out.println(control);
 
-                        Clusterer clusterer = LoadByName.clusterer("miclustering.algorithms." + c);
+                        MIClusterer clusterer = (MIClusterer) LoadByName.clusterer("miclustering.algorithms." + c);
                         try {
-                            ((MIClusterer) clusterer).setOptions(Utils.splitOptions(config));
+                            clusterer.setOptions(Utils.splitOptions(config));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
 
                         String pathDataset = "datasets/" + d + z + ".arff";
-                        int type = ((HausdorffDistance) ((MIClusterer) clusterer).getDistanceFunction()).getType();
-                        String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -A HausdorffDistance -hausdorff-type " + type;
-                        System.out.println(evalOptions);
+                        String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize";
                         ClusterEvaluation eval = new ClusterEvaluation();
                         try {
                             eval.setOptions(Utils.splitOptions(evalOptions));
@@ -76,7 +73,7 @@ public class RunExperiment {
                             e.printStackTrace();
                         }
 
-                        String distance = ((MIClusterer)clusterer).getDistanceFunction().toString();
+                        String distance = clusterer.getDistanceFunction().toString();
                         int actualNClusters = eval.getActualNumClusters();
                         int clusteredBags = eval.getInstances().numInstances()-eval.getUnclusteredInstances();
                         int unclusteredBags = eval.getUnclusteredInstances();
@@ -94,7 +91,7 @@ public class RunExperiment {
                         double recall = eval.getMacroRecall();
                         double f1 = eval.getMacroF1();
                         double specificity = eval.getMacroSpecificity();
-                        double time = ((MIClusterer)clusterer).getElapsedTime();
+                        double time = clusterer.getElapsedTime();
                         String reportTitle = saveFullReport(clusterer, eval);
                         String report = String.join(",", c, config, d + z, distance, String.valueOf(actualNClusters),
                                 String.valueOf(clusteredBags), String.valueOf(unclusteredBags), String.valueOf(rmsstd), String.valueOf(silhouette),
@@ -126,9 +123,6 @@ public class RunExperiment {
                 "BirdsBrownCreeper",
                 "BirdsChestnut-backedChickadee",
                 "BirdsHammondsFlycatcher",
-                "BiocreativeComponent",
-                "BiocreativeFunction",
-                "BiocreativeProcess",
                 "CorelAfrican",
                 "CorelAntique",
                 "CorelBattleships",
@@ -153,7 +147,10 @@ public class RunExperiment {
                 "Graz02bikes",
                 "Graz02car",
                 "Graz02people",
-                "standardMI_Maron"
+                "standardMI_Maron",
+                "BiocreativeComponent",
+                "BiocreativeFunction",
+                "BiocreativeProcess",
         };
 
         standardization = new String[]{
@@ -164,14 +161,14 @@ public class RunExperiment {
 
         clustering = new String[]{
                 "MIDBSCAN",
-                "MIKMeans",
-                "BAMIC",
+//                "MIKMeans",
+//                "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                kMeansConfig.add("-N " + k + " -V -A HausdorffDistance -hausdorff-type " + hausdorff);
+                kMeansConfig.add("-N " + k + " -V -parallelize -A HausdorffDistance -hausdorff-type " + hausdorff);
             }
         }
         List<String> dbscanConfig = new ArrayList<>();

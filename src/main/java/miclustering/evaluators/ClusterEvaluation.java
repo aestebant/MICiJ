@@ -1,5 +1,6 @@
 package miclustering.evaluators;
 
+import miclustering.algorithms.MIClusterer;
 import miclustering.utils.DatasetCentroids;
 import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
@@ -20,6 +21,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private DistanceFunction distanceFunction;
     private Instances instances;
     private DatasetCentroids datasetCentroids;
+    private boolean reuseEvaluator = false;
 
     private List<Integer> clusterAssignments;
     private int[] bagsPerCluster;
@@ -56,7 +58,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     private TotalWithinClusterVariation twcv;
     private FastTotalWithinClusterValidation ftwcv;
 
-    public void evaluateClusterer(Clusterer clusterer, boolean parallelize) throws Exception {
+    public void evaluateClusterer(MIClusterer clusterer, boolean parallelize) throws Exception {
         Instances processData;
         if (classAtt > -1) {
             Remove removeClass = new Remove();
@@ -73,18 +75,24 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         }
 
         clusterer.buildClusterer(processData);
+        //TODO Si se reusa el evaluador hay que tener cuidado con el nº de clusters
         maxNumClusters = Math.max(clusterer.numberOfClusters(), maxNumClusters);
-        rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
-        sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
-        silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
-        xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
-        db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
-        dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
-        if (classAtt > -1)
-            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
-        twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
-        ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
-        datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+
+        if (!reuseEvaluator) {
+            distanceFunction = clusterer.getDistanceFunction();
+            rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
+            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+            silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
+            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
+            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+            dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
+            if (classAtt > -1)
+                extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
+            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+            ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
+            datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        }
+
         List<Integer> clusterAssignments = getClusterAssignments(clusterer, processData);
         fullEvaluation(clusterAssignments, parallelize);
     }
@@ -447,34 +455,31 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         instances = ProcessDataset.readArff(datasetPath);
         String classString = Utils.getOption("c", options);
         setClass(classString);
-
-        String distFunctionClass = Utils.getOption("A", options);
-        distanceFunction = LoadByName.distanceFunction(distFunctionClass, options);
-
         maxNumClusters = Integer.parseInt(Utils.getOption("k", options));
-
+        reuseEvaluator = Utils.getFlag("r", options);
+        String distFunctionClass = Utils.getOption("A", options);
         boolean parallelize = Utils.getFlag("parallelize", options);
 
         attributeRangeString = Utils.getOption("p", options);
         if (attributeRangeString.length() != 0)
             printClusterAssignments = true;
 
-        Utils.checkForRemainingOptions(options);
+        if (reuseEvaluator) {
+            distanceFunction = LoadByName.distanceFunction(distFunctionClass, options);
+            rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
+            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+            silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
+            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
+            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+            dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
+            if (classAtt > -1)
+                extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
+            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+            ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
+            datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        }
 
-        //TODO PERNSAR UNA FORMA DE LIDIAR CON LA DIFERENCIA ENTRE NUM DE CLUSTERS
-        /*
-        rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
-        sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
-        silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
-        xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
-        db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
-        dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
-        if (classAtt > -1)
-            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
-        twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
-        ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
-        datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
-        */
+        Utils.checkForRemainingOptions(options);
     }
 
     private void setClass(String classString) {

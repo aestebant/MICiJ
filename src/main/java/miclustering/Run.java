@@ -3,7 +3,6 @@ package miclustering;
 import miclustering.algorithms.MIClusterer;
 import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
-import weka.clusterers.Clusterer;
 import weka.core.Utils;
 
 import java.util.HashMap;
@@ -71,10 +70,10 @@ public class Run {
                     System.out.println("Standarization: " + z);
                     System.out.println("=========================================");
 
-                    Clusterer clusterer = LoadByName.clusterer("miclustering.algorithms." + c);
+                    MIClusterer clusterer = (MIClusterer) LoadByName.clusterer("miclustering.algorithms." + c);
 
                     try {
-                        ((MIClusterer) clusterer).setOptions(Utils.splitOptions(options.get(c)));
+                        clusterer.setOptions(Utils.splitOptions(options.get(c)));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
