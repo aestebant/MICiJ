@@ -18,7 +18,7 @@ import java.util.Vector;
 
 public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     private double epsilon = 0.9;
-    private int minPoints = 6;
+    private int minPoints;
     private int numGeneratedClusters;
     private int numNoises;
     private DistanceFunction distFunction = new HausdorffDistance();
@@ -43,6 +43,8 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
     public void buildClusterer(Instances instances) throws Exception {
         this.getCapabilities().testWithFail(instances);
         long startTime = System.currentTimeMillis();
+        if (minPoints < 2)
+            minPoints = instances.get(0).relationalValue(1).numAttributes() + 1;
         numGeneratedClusters = 0;
         numNoises = 0;
         clusterID = 0;
@@ -147,14 +149,14 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
 
     @Override
     public void setOptions(String[] options) throws Exception {
-        String epsilon = Utils.getOption('E', options);
-        if (epsilon.length() != 0) {
-            this.setEpsilon(Double.parseDouble(epsilon));
-        }
-
         String minPoints = Utils.getOption('M', options);
         if (minPoints.length() != 0) {
             this.setMinPoints(Integer.parseInt(minPoints));
+        }
+
+        String epsilon = Utils.getOption('E', options);
+        if (epsilon.length() != 0) {
+            this.setEpsilon(Double.parseDouble(epsilon));
         }
 
         String distFunctionClass = Utils.getOption('A', options);
@@ -168,10 +170,10 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
 
     public String[] getOptions() {
         Vector<String> result = new Vector<>();
-        result.add("-E");
-        result.add(Double.toString(epsilon));
         result.add("-M");
         result.add(Integer.toString(minPoints));
+        result.add("-E");
+        result.add(Double.toString(epsilon));
         result.add("-A");
         result.add((distFunction.getClass().getName() + " " + Utils.joinOptions(distFunction.getOptions())).trim());
         return result.toArray(new String[0]);

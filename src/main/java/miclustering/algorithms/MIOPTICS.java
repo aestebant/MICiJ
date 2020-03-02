@@ -23,7 +23,7 @@ import java.util.*;
 public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     static final long serialVersionUID = 274552680222105221L;
     private double epsilon = 0.9D;
-    private int minPoints = 6;
+    private int minPoints;
     private int numberOfGeneratedClusters;
     private DistanceFunction m_DistanceFunction;
     private Database database;
@@ -48,6 +48,10 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     @Override
     public void buildClusterer(Instances instances) throws Exception {
         this.getCapabilities().testWithFail(instances);
+
+        if (minPoints < 2)
+            minPoints = instances.get(0).relationalValue(1).numAttributes() + 1;
+
         this.resultVector = new ArrayList<>();
         long time_1 = System.currentTimeMillis();
         this.numberOfGeneratedClusters = 0;

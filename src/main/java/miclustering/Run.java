@@ -49,16 +49,17 @@ public class Run {
         };
 
         String[] clustering = {
-                "MIDBSCAN",
-//                "MISimpleKMeans",
+//                "MIDBSCAN",
+                "MIOPTICS"
+//                "MIKMeans",
 //                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
-        options.put("MIDBSCAN", " -E 0.1 -M 2 -A HausdorffDistance -hausdorff-type 1");
-        options.put("MISimpleKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIDBSCAN", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIOPTICS", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
         options.put("BAMIC", "-A HausdorffDistance -hausdorff-type 0");
-        options.put("MIOPTICS", "");
 
         for (String d : datasets) {
             for (String z : standardization) {
@@ -79,8 +80,8 @@ public class Run {
                     }
 
                     ClusterEvaluation evaluation = new ClusterEvaluation();
-                    String pathDataset = "datasets/" + d + z + ".arff";
-                    String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize -p -A HausdorffDistance -hausdorff-type 1";
+                    String pathDataset = "/home/aurora/Escritorio/datasets/" + d + z + ".arff";
+                    String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize";
                     try {
                         evaluation.setOptions(Utils.splitOptions(evalOptions));
                         evaluation.evaluateClusterer(clusterer, true);

@@ -36,7 +36,7 @@ public class RunExperiment {
         setSaveResults();
 
         int nConfigs = 0;
-        for (Map.Entry<String, List<String>> e: clusterConfig.entrySet()) {
+        for (Map.Entry<String, List<String>> e : clusterConfig.entrySet()) {
             nConfigs += e.getValue().size();
         }
         int totalIterations = dataset.length * standardization.length * nConfigs;
@@ -75,7 +75,7 @@ public class RunExperiment {
 
                         String distance = clusterer.getDistanceFunction().toString();
                         int actualNClusters = eval.getActualNumClusters();
-                        int clusteredBags = eval.getInstances().numInstances()-eval.getUnclusteredInstances();
+                        int clusteredBags = eval.getInstances().numInstances() - eval.getUnclusteredInstances();
                         int unclusteredBags = eval.getUnclusteredInstances();
                         double rmsstd = eval.getRmssd();
                         double silhouette = eval.getSilhouette();
@@ -172,11 +172,9 @@ public class RunExperiment {
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
-        for (double eps : new double[]{0.1, 0.3, 0.5, 0.7}) {
-            for (int minPts = 2; minPts <= 8; minPts+=2) {
-                for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                    dbscanConfig.add("-E " + eps + " -M " + minPts + " -output-clusters -A HausdorffDistance -hausdorff-type " + hausdorff);
-                }
+        for (double eps : new double[]{0.2, 0.4, 0.6, 0.8, 0.9}) {
+            for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
+                dbscanConfig.add("-E " + eps + " -output-clusters -A HausdorffDistance -hausdorff-type " + hausdorff);
             }
         }
 
