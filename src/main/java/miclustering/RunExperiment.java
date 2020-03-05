@@ -160,9 +160,9 @@ public class RunExperiment {
         };
 
         clustering = new String[]{
-                "MIDBSCAN",
+//                "MIDBSCAN",
 //                "MIKMeans",
-//                "BAMIC",
+                "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();

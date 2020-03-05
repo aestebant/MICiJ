@@ -1,8 +1,8 @@
 package miclustering;
 
 import miclustering.algorithms.MIClusterer;
-import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
+import miclustering.utils.ProcessDataset;
 import weka.core.Utils;
 
 import java.util.HashMap;
@@ -57,7 +57,7 @@ public class Run {
 
         Map<String, String> options = new HashMap<>();
         options.put("MIDBSCAN", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
-        options.put("MIOPTICS", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIOPTICS", "-E 1.5 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
         options.put("BAMIC", "-A HausdorffDistance -hausdorff-type 0");
 
@@ -72,25 +72,25 @@ public class Run {
                     System.out.println("=========================================");
 
                     MIClusterer clusterer = (MIClusterer) LoadByName.clusterer("miclustering.algorithms." + c);
-
+                    String pathDataset = "/home/aurora/Escritorio/datasets/" + d + z + ".arff";
                     try {
                         clusterer.setOptions(Utils.splitOptions(options.get(c)));
+                        clusterer.buildClusterer(ProcessDataset.readArff(pathDataset));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
 
-                    ClusterEvaluation evaluation = new ClusterEvaluation();
-                    String pathDataset = "/home/aurora/Escritorio/datasets/" + d + z + ".arff";
+                    /*ClusterEvaluation evaluation = new ClusterEvaluation();
                     String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize";
                     try {
                         evaluation.setOptions(Utils.splitOptions(evalOptions));
                         evaluation.evaluateClusterer(clusterer, true);
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }
+                    }*/
 
                     System.out.println(clusterer.toString());
-                    System.out.println(evaluation.printFullEvaluation());
+                    //System.out.println(evaluation.printFullEvaluation());
                 }
             }
 

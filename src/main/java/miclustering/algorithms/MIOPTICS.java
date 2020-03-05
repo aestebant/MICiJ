@@ -100,9 +100,9 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
                 oos.flush();
                 oos.close();
                 fos.close();
-            } catch (Exception var15) {
-                System.err.println("Error writing generated database to file '" + this.getDatabaseOutput() + "': " + var15);
-                var15.printStackTrace();
+            } catch (Exception e) {
+                System.err.println("Error writing generated database to file '" + this.getDatabaseOutput() + "': " + e);
+                e.printStackTrace();
             }
         }
 
@@ -190,8 +190,6 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         optionString = Utils.getOption('M', options);
         if (optionString.length() != 0) {
             this.setMinPoints(Integer.parseInt(optionString));
-        } else {
-            this.setMinPoints(6);
         }
 
         optionString = Utils.getOption('A', options);
