@@ -12,15 +12,15 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
-                "BirdsBrownCreeper",
+//                "BirdsBrownCreeper",
 //                "BirdsChestnut-backedChickadee",
-//                "BirdsDark-eyedJunco",
-//                "BiocreativeComponent",
-//                "BiocreativeFunction",
-//                "BiocreativeProcess",
-//                "Harddrive2",
+//                "BirdsHammondsFlycatcher",
+//                "CorelAfrican",
+//                "CorelAntique",
+//                "CorelBattleships",
+//                "Harddrive1",
 //                "ImageElephant",
-//                "ImageFox",
+                "ImageFox",
 //                "ImageTiger",
 //                "Messidor",
 //                "mutagenesis3_atoms",
@@ -39,7 +39,10 @@ public class Run {
 //                "Graz02bikes",
 //                "Graz02car",
 //                "Graz02people",
-//                "standardMI_Maron"
+//                "standardMI_Maron",
+//                "BiocreativeComponent",
+//                "BiocreativeFunction",
+//                "BiocreativeProcess",
         };
 
         String[] standardization = {
@@ -57,24 +60,29 @@ public class Run {
 
         Map<String, String> options = new HashMap<>();
         options.put("MIDBSCAN", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
-        options.put("MIOPTICS", "-E 1.5 -A HausdorffDistance -hausdorff-type 0");
+        options.put("MIOPTICS", "-E 10 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
         options.put("BAMIC", "-A HausdorffDistance -hausdorff-type 0");
 
         for (String d : datasets) {
             for (String z : standardization) {
                 for (String c : clustering) {
+                    MIClusterer clusterer = (MIClusterer) LoadByName.clusterer("miclustering.algorithms." + c);
+                    String pathDataset = "datasets/" + d + z + ".arff";
+                    try {
+                        clusterer.setOptions(Utils.splitOptions(options.get(c)));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 
                     System.out.println("=========================================");
                     System.out.println("Algorithm: " + c);
+                    System.out.println("Distance: " + clusterer.getDistanceFunction());
                     System.out.println("Dataset: " + d);
                     System.out.println("Standarization: " + z);
                     System.out.println("=========================================");
 
-                    MIClusterer clusterer = (MIClusterer) LoadByName.clusterer("miclustering.algorithms." + c);
-                    String pathDataset = "/home/aurora/Escritorio/datasets/" + d + z + ".arff";
                     try {
-                        clusterer.setOptions(Utils.splitOptions(options.get(c)));
                         clusterer.buildClusterer(ProcessDataset.readArff(pathDataset));
                     } catch (Exception e) {
                         e.printStackTrace();

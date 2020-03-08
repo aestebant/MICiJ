@@ -71,7 +71,7 @@ public class DataObject implements Serializable, RevisionHandler {
     }
 
     public String toString() {
-        return this.instance.toString();
+        return "(" + instance.stringValue(2) + ") " + instance.toString();
     }
 
     public String getRevision() {

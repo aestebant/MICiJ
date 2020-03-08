@@ -5,7 +5,7 @@ import miclustering.algorithms.utils.Database;
 import miclustering.algorithms.utils.NEpsElement;
 import miclustering.algorithms.utils.opticgui.OPTICS_Visualizer;
 import miclustering.algorithms.utils.opticgui.SERObject;
-import miclustering.distances.HausdorffDistance;
+import miclustering.utils.LoadByName;
 import weka.clusterers.AbstractClusterer;
 import weka.clusterers.forOPTICSAndDBScan.Utils.UpdateQueue;
 import weka.clusterers.forOPTICSAndDBScan.Utils.UpdateQueueElement;
@@ -25,7 +25,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     private double epsilon = 0.9D;
     private int minPoints;
     private int numberOfGeneratedClusters;
-    private DistanceFunction m_DistanceFunction;
+    private DistanceFunction distFunction;
     private Database database;
     private double elapsedTime;
     private boolean writeOPTICSresults = false;
@@ -192,19 +192,8 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
             this.setMinPoints(Integer.parseInt(optionString));
         }
 
-        optionString = Utils.getOption('A', options);
-        if (optionString.length() != 0) {
-            String[] distSpec = Utils.splitOptions(optionString);
-            if (distSpec.length == 0) {
-                throw new Exception("Invalid DistanceFunction specification string.");
-            }
-
-            String className = distSpec[0];
-            distSpec[0] = "";
-            this.setDistanceFunction((DistanceFunction) Utils.forName(DistanceFunction.class, className, distSpec));
-        } else {
-            this.setDistanceFunction(new HausdorffDistance());
-        }
+        String distFunctionClass = Utils.getOption('A', options);
+        distFunction = LoadByName.distanceFunction(distFunctionClass, options);
 
         this.setWriteOPTICSresults(Utils.getFlag('F', options));
         this.setShowGUI(!Utils.getFlag("no-gui", options));
@@ -224,7 +213,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         result.add("-M");
         result.add("" + this.getMinPoints());
         result.add("-A");
-        result.add((this.m_DistanceFunction.getClass().getName() + " " + Utils.joinOptions(this.m_DistanceFunction.getOptions())).trim());
+        result.add((this.distFunction.getClass().getName() + " " + Utils.joinOptions(this.distFunction.getOptions())).trim());
         if (this.getWriteOPTICSresults()) {
             result.add("-F");
         }
@@ -259,7 +248,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     }
 
     public DistanceFunction getDistanceFunction() {
-        return this.m_DistanceFunction;
+        return this.distFunction;
     }
 
     @Override
@@ -268,7 +257,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     }
 
     public void setDistanceFunction(DistanceFunction df) throws Exception {
-        this.m_DistanceFunction = df;
+        this.distFunction = df;
     }
 
     public boolean getWriteOPTICSresults() {
