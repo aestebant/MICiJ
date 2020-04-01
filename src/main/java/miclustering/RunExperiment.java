@@ -120,37 +120,40 @@ public class RunExperiment {
 
     private static void setExperiments() {
         dataset = new String[]{
-                "BirdsBrownCreeper",
-                "BirdsChestnut-backedChickadee",
-                "BirdsHammondsFlycatcher",
-                "CorelAfrican",
-                "CorelAntique",
-                "CorelBattleships",
-                "Harddrive1",
+//                "BirdsBrownCreeper",
+//                "BirdsChestnut-backedChickadee",
+//                "BirdsHammondsFlycatcher",
+//                "CorelAfrican",
+//                "CorelAntique",
+//                "CorelBattleships",
+//                "Harddrive1",
                 "ImageElephant",
                 "ImageFox",
                 "ImageTiger",
-                "Messidor",
+//                "Messidor",
                 "mutagenesis3_atoms",
                 "mutagenesis3_bonds",
                 "mutagenesis3_chains",
-                "Newsgroups1",
-                "Newsgroups2",
-                "Newsgroups3",
-                "suramin",
+                "musk1",
+                "musk2",
+//                "Newsgroups1",
+//                "Newsgroups2",
+//                "Newsgroups3",
+//                "suramin",
                 "DirectionEastwest",
-                "Thioredoxin",
-                "UCSBBreastCancer",
-                "Web1",
-                "Web2",
-                "Web3",
-                "Graz02bikes",
-                "Graz02car",
-                "Graz02people",
-                "standardMI_Maron",
-                "BiocreativeComponent",
-                "BiocreativeFunction",
-                "BiocreativeProcess",
+                "DirectionWesteast",
+//                "Thioredoxin",
+//                "UCSBBreastCancer",
+//                "Web1",
+//                "Web2",
+//                "Web3",
+//                "Graz02bikes",
+//                "Graz02car",
+//                "Graz02people",
+//                "standardMI_Maron",
+//                "BiocreativeComponent",
+//                "BiocreativeFunction",
+//                "BiocreativeProcess",
         };
 
         standardization = new String[]{
@@ -161,14 +164,16 @@ public class RunExperiment {
 
         clustering = new String[]{
 //                "MIDBSCAN",
-//                "MIKMeans",
+                "MIKMeans",
                 "BAMIC",
         };
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
-            for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                kMeansConfig.add("-N " + k + " -V -parallelize -A HausdorffDistance -hausdorff-type " + hausdorff);
+            for (int hausdorff : new int[]{0}) {
+                for (int seed : new int[]{9854, 5495216, 11122333, 753, 456892, 6847983, 1559753, 65489, 987123, 351759}) {
+                    kMeansConfig.add("-N " + k + " -V -parallelize -A HausdorffDistance -hausdorff-type " + hausdorff + " -S " + seed);
+                }
             }
         }
         List<String> dbscanConfig = new ArrayList<>();
