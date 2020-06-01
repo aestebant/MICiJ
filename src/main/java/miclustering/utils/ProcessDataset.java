@@ -34,7 +34,7 @@ public class ProcessDataset {
         if (isBag)
             return new Instances(bag.relationalValue(1));
         else {
-            ArrayList<Attribute> attributes = new ArrayList<>(bag.numAttributes());
+            ArrayList<Attribute> attributes = new ArrayList<>(bag.numValues());
             for (int i = 0; i < bag.numAttributes(); ++i) {
                 attributes.add(new Attribute("att" + i));
             }
