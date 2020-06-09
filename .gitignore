@@ -1,6 +1,7 @@
 /datasets/
 /out/
 /.idea/workspace.xml
+/.idea/libraries/*
 /experimentacion/
 /experiments/
 /target/
