@@ -1,6 +1,7 @@
 package miclustering;
 
 import miclustering.algorithms.MIClusterer;
+import miclustering.evaluators.ClusterEvaluation;
 import miclustering.utils.LoadByName;
 import miclustering.utils.ProcessDataset;
 import weka.core.Utils;
@@ -12,6 +13,8 @@ public class Run {
     public static void main(String[] args) {
 
         String[] datasets = {
+                "musk1",
+                "musk2",
 //                "BirdsBrownCreeper",
 //                "BirdsChestnut-backedChickadee",
 //                "BirdsHammondsFlycatcher",
@@ -37,7 +40,7 @@ public class Run {
 //                "Web2",
 //                "Web3",
 //                "Graz02bikes",
-                "Graz02car",
+//                "Graz02car",
 //                "Graz02people",
 //                "standardMI_Maron",
 //                "BiocreativeComponent",
@@ -53,16 +56,16 @@ public class Run {
 
         String[] clustering = {
 //                "MIDBSCAN",
-                "MIOPTICS"
+//                "MIOPTICS"
 //                "MIKMeans",
-//                "BAMIC",
+                "BAMIC",
         };
 
         Map<String, String> options = new HashMap<>();
         options.put("MIDBSCAN", "-E 0.8 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIOPTICS", "-E 10 -A HausdorffDistance -hausdorff-type 0");
         options.put("MIKMeans", "-N 2 -A HausdorffDistance -hausdorff-type 0");
-        options.put("BAMIC", "-A HausdorffDistance -hausdorff-type 0");
+        options.put("BAMIC", "-N 2 -A HausdorffDistance -hausdorff-type 0");
 
         for (String d : datasets) {
             for (String z : standardization) {
@@ -88,17 +91,17 @@ public class Run {
                         e.printStackTrace();
                     }
 
-                    /*ClusterEvaluation evaluation = new ClusterEvaluation();
+                    ClusterEvaluation evaluation = new ClusterEvaluation();
                     String evalOptions = "-d " + pathDataset + " -c last -k 2 -parallelize";
                     try {
                         evaluation.setOptions(Utils.splitOptions(evalOptions));
                         evaluation.evaluateClusterer(clusterer, true);
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }*/
+                    }
 
-                    System.out.println(clusterer.toString());
-                    //System.out.println(evaluation.printFullEvaluation());
+                    //System.out.println(clusterer.toString());
+                    System.out.println(evaluation.printFullEvaluation());
                 }
             }
 

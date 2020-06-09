@@ -16,9 +16,9 @@ import weka.core.Instances;
 import java.util.*;
 
 public class DBCV {
-    private Instances instances;
-    private double[][] distancesMatrix;
-    private int maxNumClusters;
+    private final Instances instances;
+    private final double[][] distancesMatrix;
+    private final int maxNumClusters;
 
     public DBCV(Instances instances, DistanceFunction distanceFunction, int maxNumClusters, boolean parallelize) {
         this.instances = instances;
