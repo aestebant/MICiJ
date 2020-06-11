@@ -11,16 +11,16 @@ import java.util.List;
 import java.util.Map;
 
 public class XieBeniIndex {
-    private Instances instances;
-    private int maxNumClusters;
-    private DistanceFunction distanceFunction;
-    private DatasetCentroids datasetCentroids;
+    private final Instances dataset;
+    private final int maxNumClusters;
+    private final DistanceFunction distanceFunction;
+    private final DatasetCentroids datasetCentroids;
 
-    public XieBeniIndex(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
-        this.instances = instances;
+    public XieBeniIndex(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
-        this.datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        this.datasetCentroids = new DatasetCentroids(dataset, maxNumClusters, distanceFunction);
     }
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, boolean parallelize) {
         Map<Integer, Instance> centroids = datasetCentroids.compute(clusterAssignments, parallelize);
@@ -28,9 +28,9 @@ public class XieBeniIndex {
     }
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, Map<Integer, Instance> centroids) {
         double[] sumDist = new double[maxNumClusters];
-        for (int i = 0; i < instances.numInstances(); ++i) {
+        for (int i = 0; i < dataset.numInstances(); ++i) {
             if (clusterAssignments.get(i) > -1)
-                sumDist[clusterAssignments.get(i)] += FastMath.pow(distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i))), 2);
+                sumDist[clusterAssignments.get(i)] += FastMath.pow(distanceFunction.distance(dataset.get(i), centroids.get(clusterAssignments.get(i))), 2);
         }
 
         for (int i = 0; i < maxNumClusters; ++i)

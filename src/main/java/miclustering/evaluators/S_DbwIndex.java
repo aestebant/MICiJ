@@ -15,12 +15,12 @@ import java.util.stream.IntStream;
  * Esta métrica no tiene en cuenta las instancias clasificadas como ruido.
  */
 public class S_DbwIndex {
-    private int maxNumClusters;
-    private DistanceFunction distanceFunction;
-    private Instances instances;
+    private final int maxNumClusters;
+    private final DistanceFunction distanceFunction;
+    private final Instances dataset;
 
-    public S_DbwIndex(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
-        this.instances = instances;
+    public S_DbwIndex(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
     }
@@ -34,17 +34,17 @@ public class S_DbwIndex {
         for (int i = 0; i < clusterAssignments.size(); ++i) {
             int clusterIdx = clusterAssignments.get(i);
             if (clusterIdx >= 0)
-                nInstPerCluster[clusterIdx] += instances.get(i).relationalValue(1).numInstances();
+                nInstPerCluster[clusterIdx] += dataset.get(i).relationalValue(1).numInstances();
         }
 
         Map<Integer, Instances> instancesUnion = new HashMap<>(maxNumClusters);
         for (int i = 0; i < maxNumClusters; ++i) {
-            instancesUnion.put(i, new Instances(instances.get(0).relationalValue(1), nInstPerCluster[i]));
+            instancesUnion.put(i, new Instances(dataset.get(0).relationalValue(1), nInstPerCluster[i]));
         }
         for (int i = 0; i < clusterAssignments.size(); ++i) {
             int clusterIdx = clusterAssignments.get(i);
             if (clusterIdx >= 0)
-                instancesUnion.get(clusterIdx).addAll(instances.get(i).relationalValue(1));
+                instancesUnion.get(clusterIdx).addAll(dataset.get(i).relationalValue(1));
         }
 
         Map<Integer, Double> l2NormClusters = new HashMap<>(maxNumClusters);
@@ -63,7 +63,7 @@ public class S_DbwIndex {
      * Intra-cluster variance
      */
     private double computeScat(int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
-        Instances datasetUnion = new Instances(instances.get(0).relationalValue(1), IntStream.of(nInstPerCluster).sum());
+        Instances datasetUnion = new Instances(dataset.get(0).relationalValue(1), IntStream.of(nInstPerCluster).sum());
         for (int i = 0; i < maxNumClusters; ++i)
             datasetUnion.addAll(instancesUnion.get(i));
         double l2NormDataset = new ArrayRealVector(datasetUnion.variances()).getNorm();
@@ -82,7 +82,7 @@ public class S_DbwIndex {
      * Inter-cluster density
      */
     private double computeDens_Bw(List<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
-        int numInstances = instances.numInstances();
+        int numInstances = dataset.numInstances();
 
         double stdev = l2NormClusters.values().stream().mapToDouble(Double::doubleValue).sum();
         stdev = FastMath.sqrt(stdev) / actualNumClusters;
@@ -91,11 +91,11 @@ public class S_DbwIndex {
         for (int i = 0; i < maxNumClusters; ++i) {
             for (int j = 0; j < maxNumClusters; ++j) {
                 if (i != j) {
-                    Instances u = new Instances(instances.get(0).relationalValue(1), nInstPerCluster[i] + nInstPerCluster[j]);
+                    Instances u = new Instances(dataset.get(0).relationalValue(1), nInstPerCluster[i] + nInstPerCluster[j]);
                     u.addAll(instancesUnion.get(i));
                     u.addAll(instancesUnion.get(j));
 
-                    Instance aux = ProcessDataset.copyBag(instances.get(0));
+                    Instance aux = ProcessDataset.copyBag(dataset.get(0));
                     aux.relationalValue(1).delete();
                     aux.relationalValue(1).addAll(u);
 
@@ -104,7 +104,7 @@ public class S_DbwIndex {
                     double densityJ = 0D;
                     for (int k = 0; k < numInstances; ++k) {
                         if (clusterAssignments.get(k) == i || clusterAssignments.get(k) == j) {
-                            double distance = distanceFunction.distance(aux, instances.get(k));
+                            double distance = distanceFunction.distance(aux, dataset.get(k));
                             if (distance <= stdev)
                                 densityU++;
                             if (clusterAssignments.get(k) == i)
@@ -126,8 +126,8 @@ public class S_DbwIndex {
      */
     @SuppressWarnings("unused")
     private double computeDens_BwSingleInstance(List<Integer> clusterAssignments, int actualNumClusters, int[] nInstPerCluster, Map<Integer, Instances> instancesUnion, Map<Integer, Double> l2NormClusters) {
-        int numAttributes = instances.get(0).relationalValue(1).numAttributes();
-        int numInstances = instances.numInstances();
+        int numAttributes = dataset.get(0).relationalValue(1).numAttributes();
+        int numInstances = dataset.numInstances();
 
         double stdev = l2NormClusters.values().stream().mapToDouble(Double::doubleValue).sum();
         stdev = FastMath.sqrt(stdev) / actualNumClusters;
@@ -155,7 +155,7 @@ public class S_DbwIndex {
 
                     for (int k = 0; k < numInstances; ++k) {
                         if (clusterAssignments.get(k) == i || clusterAssignments.get(k) == j) {
-                            double distance = distanceFunction.distance(u, instances.get(k));
+                            double distance = distanceFunction.distance(u, dataset.get(k));
                             if (distance <= stdev)
                                 densityU++;
                             if (clusterAssignments.get(k) == i)

@@ -7,21 +7,21 @@ import java.util.List;
 import java.util.stream.DoubleStream;
 
 public class FastTotalWithinClusterValidation {
-    private Instances instances;
-    private int maxNumClusters;
+    private final Instances dataset;
+    private final int maxNumClusters;
     private double max = 0D;
     private double min = Double.POSITIVE_INFINITY;
 
-    public FastTotalWithinClusterValidation(Instances instances, int maxNumClusters) {
-        this.instances = instances;
+    public FastTotalWithinClusterValidation(Instances dataset, int maxNumClusters) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
     }
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {
         double[] sumsByCluster = new double[maxNumClusters];
         for (int i = 0; i < clusterAssignments.size(); ++i) {
-            for (int j = 0; j < instances.get(i).relationalValue(1).numAttributes(); ++j)
-                sumsByCluster[clusterAssignments.get(i)] += FastMath.pow(instances.get(i).relationalValue(1).meanOrMode(j), 2);
+            for (int j = 0; j < dataset.get(i).relationalValue(1).numAttributes(); ++j)
+                sumsByCluster[clusterAssignments.get(i)] += FastMath.pow(dataset.get(i).relationalValue(1).meanOrMode(j), 2);
         }
         double result = DoubleStream.of(sumsByCluster).sum();
         for (int i = 0; i < maxNumClusters; ++i) {

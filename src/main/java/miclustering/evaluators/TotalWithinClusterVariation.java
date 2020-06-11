@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 public class TotalWithinClusterVariation {
-    private Instances instances;
-    private DistanceFunction distanceFunction;
-    private DatasetCentroids datasetCentroids;
+    private final Instances dataset;
+    private final DistanceFunction distanceFunction;
+    private final DatasetCentroids datasetCentroids;
 
-    public TotalWithinClusterVariation(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
-        this.instances = instances;
+    public TotalWithinClusterVariation(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.dataset = dataset;
         this.distanceFunction = distanceFunction;
-        this.datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        this.datasetCentroids = new DatasetCentroids(dataset, maxNumClusters, distanceFunction);
     }
 
     public double computeIndex(List<Integer> clusterAssignments, boolean parallelize) {
@@ -27,8 +27,8 @@ public class TotalWithinClusterVariation {
 
     public double computeIndex(List<Integer> clusterAssignments, Map<Integer, Instance> centroids) {
         double twcv = 0D;
-        for (int i = 0; i < instances.numInstances(); ++i) {
-            twcv += FastMath.pow(distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i))), 2);
+        for (int i = 0; i < dataset.numInstances(); ++i) {
+            twcv += FastMath.pow(distanceFunction.distance(dataset.get(i), centroids.get(clusterAssignments.get(i))), 2);
         }
         return twcv;
     }

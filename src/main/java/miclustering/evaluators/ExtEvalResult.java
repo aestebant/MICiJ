@@ -1,9 +1,9 @@
 package miclustering.evaluators;
 
 public class ExtEvalResult {
-    private int[][] confMatrix;
-    private int[] clusterToClass;
-    private int[] unnasigned;
+    private final int[][] confMatrix;
+    private final int[] clusterToClass;
+    private final int[] unnasigned;
 
     public ExtEvalResult(int[][] confMatrix, int[] mapClasses, int[] unnasigned) {
         this.confMatrix = confMatrix;

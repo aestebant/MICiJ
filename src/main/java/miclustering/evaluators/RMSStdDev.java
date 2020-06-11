@@ -10,16 +10,16 @@ import java.util.List;
 import java.util.Map;
 
 public class RMSStdDev {
-    private Instances instances;
-    private int maxNumClusters;
-    private DistanceFunction distanceFunction;
-    private DatasetCentroids datasetCentroids;
+    private final Instances dataset;
+    private final int maxNumClusters;
+    private final DistanceFunction distanceFunction;
+    private final DatasetCentroids datasetCentroids;
 
-    public RMSStdDev(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
-        this.instances = instances;
+    public RMSStdDev(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
-        this.datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
+        this.datasetCentroids = new DatasetCentroids(dataset, maxNumClusters, distanceFunction);
     }
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, boolean parallelize) {
@@ -29,16 +29,16 @@ public class RMSStdDev {
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster, Map<Integer, Instance> centroids) {
         double rmssd = 0D;
-        for (int i = 0; i < instances.numInstances(); ++i) {
+        for (int i = 0; i < dataset.numInstances(); ++i) {
             if (clusterAssignments.get(i) > -1)
-                rmssd += FastMath.pow(distanceFunction.distance(instances.get(i), centroids.get(clusterAssignments.get(i))), 2);
+                rmssd += FastMath.pow(distanceFunction.distance(dataset.get(i), centroids.get(clusterAssignments.get(i))), 2);
         }
         double divisor = 0D;
         for (int i = 0; i < maxNumClusters; ++i) {
             if (bagsPerCluster[i] > 0)
                 divisor += (bagsPerCluster[i] - 1);
         }
-        divisor *= instances.get(0).relationalValue(1).numAttributes();
+        divisor *= dataset.get(0).relationalValue(1).numAttributes();
         return FastMath.sqrt(rmssd / divisor);
     }
 }

@@ -16,15 +16,15 @@ import weka.core.Instances;
 import java.util.*;
 
 public class DBCV {
-    private final Instances instances;
+    private final Instances dataset;
     private final double[][] distancesMatrix;
     private final int maxNumClusters;
 
-    public DBCV(Instances instances, DistanceFunction distanceFunction, int maxNumClusters, boolean parallelize) {
-        this.instances = instances;
+    public DBCV(Instances dataset, DistanceFunction distanceFunction, int maxNumClusters, boolean parallelize) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         DistancesMatrix dm = new DistancesMatrix();
-        distancesMatrix = dm.compute(instances, distanceFunction, parallelize);
+        distancesMatrix = dm.compute(dataset, distanceFunction, parallelize);
     }
 
     public double computeIndex(List<Integer> clusterAssignments, int[] bagsPerCluster) {
@@ -40,7 +40,7 @@ public class DBCV {
         }
         double[] weights = new double[maxNumClusters];
         for (int i = 0; i < maxNumClusters; ++i)
-            weights[i] = (double) bagsPerCluster[i] / instances.numInstances();
+            weights[i] = (double) bagsPerCluster[i] / dataset.numInstances();
         Mean mean = new Mean();
         double result;
         try {
@@ -52,7 +52,7 @@ public class DBCV {
     }
 
     private double[] allPointsCoreDist(List<Integer> clusterAssignments, int[] bagsPerCluster) {
-        int d = instances.get(0).relationalValue(1).numAttributes();
+        int d = dataset.get(0).relationalValue(1).numAttributes();
         double[] result = new double[clusterAssignments.size()];
         for (int i = 0; i < clusterAssignments.size(); ++i) {
             int clusterIdx = clusterAssignments.get(i);

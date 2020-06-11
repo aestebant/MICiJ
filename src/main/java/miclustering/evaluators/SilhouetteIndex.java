@@ -10,8 +10,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class SilhouetteIndex {
-    private int maxNumClusters;
-    private double[][] distances;
+    private final int maxNumClusters;
+    private final double[][] distances;
 
     public SilhouetteIndex(Instances instances,  int maxNumClusters, DistanceFunction distanceFunction, boolean parallelize) {
         this.maxNumClusters = maxNumClusters;

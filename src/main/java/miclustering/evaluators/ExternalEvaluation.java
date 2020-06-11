@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ExternalEvaluation {
-    private Instances instances;
-    private int maxNumClusters;
-    private int numClasses;
+    private final Instances dataset;
+    private final int maxNumClusters;
+    private final int numClasses;
 
-    public ExternalEvaluation(Instances instances, int maxNumClusters, int numClasses) {
-        this.instances = instances;
+    public ExternalEvaluation(Instances dataset, int maxNumClusters, int numClasses) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.numClasses = numClasses;
     }
@@ -24,7 +24,7 @@ public class ExternalEvaluation {
         int[][] confMatrix = new int[maxNumClusters][numClasses];
         int[] unnasigned = new int[numClasses];
         for(int i = 0; i < clusterAssignments.size(); ++i) {
-            Instance instance = instances.get(i);
+            Instance instance = dataset.get(i);
             if (!instance.classIsMissing()) {
                 if (clusterAssignments.get(i) > -1)
                     confMatrix[clusterAssignments.get(i)][(int) instance.classValue()]++;
@@ -88,7 +88,7 @@ public class ExternalEvaluation {
         double entropy = 0D;
         for (int i = 0; i < maxNumClusters; ++i) {
             if (bagsPerCluster[i] > 0) {
-                entropy += clusterEntropy[i] * ((double) bagsPerCluster[i] / instances.numInstances());
+                entropy += clusterEntropy[i] * ((double) bagsPerCluster[i] / dataset.numInstances());
             }
         }
         return entropy;
@@ -102,7 +102,7 @@ public class ExternalEvaluation {
         }
         // Al dividir por el nº total de bolsas también estamos penalizando si hay algunas clasificadas como ruido
         // Se asume que todas las bolsas tienen clase
-        return purity / instances.numInstances();
+        return purity / dataset.numInstances();
     }
 
     public double computeRandIndex(ExtEvalResult cer) {
@@ -115,7 +115,7 @@ public class ExternalEvaluation {
         }
         // Al dividir por el nº bolsas de instancias también estamos penalizando si hay algunas clasificadas como ruido
         // Se asume que todas las bolsas tienen clase
-        return rand / instances.numInstances();
+        return rand / dataset.numInstances();
     }
 
     public double[] computePrecision(ExtEvalResult cer) {
