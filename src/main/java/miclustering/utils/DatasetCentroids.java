@@ -9,12 +9,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class DatasetCentroids {
-    private Instances instances;
-    private int maxNumClusters;
-    private DistanceFunction distanceFunction;
+    private final Instances dataset;
+    private final int maxNumClusters;
+    private final DistanceFunction distanceFunction;
 
-    public DatasetCentroids(Instances instances, int maxNumClusters, DistanceFunction distanceFunction) {
-        this.instances = instances;
+    public DatasetCentroids(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+        this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
     }
@@ -27,11 +27,11 @@ public class DatasetCentroids {
     private Map<Integer, Instances> createClusters(List<Integer> clusterAssignments) {
         Map<Integer, Instances> bagsPerCluster = new HashMap<>(maxNumClusters);
         for (int cluster = 0; cluster < maxNumClusters; ++cluster) {
-            bagsPerCluster.put(cluster, new Instances(instances, 0));
+            bagsPerCluster.put(cluster, new Instances(dataset, 0));
         }
-        for (int i = 0; i < instances.numInstances(); ++i) {
+        for (int i = 0; i < dataset.numInstances(); ++i) {
             if (clusterAssignments.get(i) > -1)
-                bagsPerCluster.get(clusterAssignments.get(i)).add(instances.get(i));
+                bagsPerCluster.get(clusterAssignments.get(i)).add(dataset.get(i));
         }
         return bagsPerCluster;
     }
@@ -104,7 +104,7 @@ public class DatasetCentroids {
         double[] distances = new double[maxNumClusters];
         for (int i = 0; i < maxNumClusters; ++i) {
             if (centroids.containsKey(i))
-                distances[i] = distanceFunction.distance(instances.get(i), centroids.get(i));
+                distances[i] = distanceFunction.distance(dataset.get(i), centroids.get(i));
         }
         return distances;
     }

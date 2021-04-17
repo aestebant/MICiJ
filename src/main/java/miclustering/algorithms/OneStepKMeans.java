@@ -15,11 +15,11 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class OneStepKMeans {
-    private Instances dataset;
+    private final Instances dataset;
     private DistanceFunction distanceFunction;
-    private DatasetCentroids datasetCentroids;
-    private int numClusters;
-    private boolean checkValidSolution;
+    private final DatasetCentroids datasetCentroids;
+    private final int numClusters;
+    private final boolean checkValidSolution;
 
     public OneStepKMeans(String datasetPath, String distanceClass, String distanceConfig, int numClusters, boolean checkValidSolution) {
         Instances dataset = ProcessDataset.readArff(datasetPath);

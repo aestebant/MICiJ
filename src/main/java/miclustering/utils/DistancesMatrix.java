@@ -65,8 +65,10 @@ public class DistancesMatrix {
     }
 
     private class Wrapper implements Callable<Double[]> {
-        private int aIdx, bIdx;
-        private Instance a, b;
+        private final int aIdx;
+        private final int bIdx;
+        private final Instance a;
+        private final Instance b;
         Wrapper(Instance a, Instance b, int aIdx, int bIdx) {
             this.aIdx = aIdx;
             this.bIdx = bIdx;
