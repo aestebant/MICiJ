@@ -23,11 +23,21 @@ public class MahalanobisDistance extends MIDistance {
         RealMatrix mean2 = new Array2DRowRealMatrix(vm2.getResult());
         RealMatrix meanSub = mean1.subtract(mean2);
 
-        Covariance getCov1 = new Covariance(data1);
-        RealMatrix cov1 = getCov1.getCovarianceMatrix();
+        RealMatrix cov1;
+        if (data1.length > 1) {
+            Covariance getCov1 = new Covariance(data1);
+            cov1 = getCov1.getCovarianceMatrix();
+        } else {
+            cov1 = new Array2DRowRealMatrix(new double[data1[0].length][data1[0].length]);
+        }
 
-        Covariance getCov2 = new Covariance(data2);
-        RealMatrix cov2 = getCov2.getCovarianceMatrix();
+        RealMatrix cov2;
+        if (data2.length > 1) {
+            Covariance getCov2 = new Covariance(data2);
+            cov2 = getCov2.getCovarianceMatrix();
+        } else {
+            cov2 = new Array2DRowRealMatrix(new double[data2[0].length][data2[0].length]);
+        }
 
         cov1 = cov1.scalarMultiply(0.5);
         cov2 = cov2.scalarMultiply(0.5);
