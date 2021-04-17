@@ -484,7 +484,10 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
             }
         }
         else {
-            clustersToPrint = new Instances(centroids.entrySet().iterator().next().getValue().dataset());
+            clustersToPrint = new Instances(centroids.entrySet().iterator().next().getValue().dataset(), numClusters);
+            for (Map.Entry<Integer, Instance> entry : centroids.entrySet()) {
+                clustersToPrint.add(entry.getValue());
+            }
             numAttributes = clustersToPrint.numAttributes();
         }
 
@@ -495,7 +498,7 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
 
         boolean containsNumeric = false;
         int maxV;
-        for (int i = 0; i < centroids.size(); ++i) {
+        for (int i = 0; i < currentNClusters; ++i) {
             for (maxV = 0; maxV < numAttributes; ++maxV) {
                 if (clustersToPrint.attribute(maxV).name().length() > maxAttWidth) {
                     maxAttWidth = clustersToPrint.attribute(maxV).name().length();
@@ -571,7 +574,7 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
             result.append(this.pad(cSize, " ", maxWidth + 1 - cSize.length(), true));
         }
         result.append("\n");
-        result.append(this.pad("", "=", maxAttWidth + maxWidth * (clustersToPrint.numInstances() + 1) + clustersToPrint.numInstances() + 1, true));
+        result.append(this.pad("", "=", maxAttWidth + maxWidth * (currentNClusters + 1) + currentNClusters + 1, true));
         result.append("\n");
 
         for (int i = 0; i < numAttributes; ++i) {
