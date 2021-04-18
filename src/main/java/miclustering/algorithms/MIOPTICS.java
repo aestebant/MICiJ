@@ -256,6 +256,11 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         return 0;
     }
 
+    @Override
+    public List<Integer> getClusterAssignments() {
+        return null;
+    }
+
     public void setDistanceFunction(DistanceFunction df) throws Exception {
         this.distFunction = df;
     }

@@ -11,10 +11,7 @@ import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
 import java.text.DecimalFormat;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
     private double epsilon = 0.9;
@@ -26,6 +23,7 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
     private int clusterID;
     private double elapsedTime;
     private boolean printClusterAssignments;
+    private List<Integer> clusterAssignments;
 
     @Override
     public Capabilities getCapabilities() {
@@ -49,6 +47,7 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
         numNoises = 0;
         clusterID = 0;
         database = new Database(distFunction, instances);
+        clusterAssignments = new ArrayList<>(database.getInstances().numInstances());
 
         for (int i = 0; i < database.getInstances().numInstances(); ++i) {
             Instance instance = database.getInstances().instance(i);
@@ -64,6 +63,12 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
                 clusterID++;
                 numGeneratedClusters++;
             }
+        }
+
+        for (int i = 0; i < clusterAssignments.size(); ++i) {
+            Instance instance = database.getInstances().instance(i);
+            DataObject dataObject = database.getDataObject(instance.stringValue(0));
+            clusterAssignments.add(dataObject.getClusterLabel());
         }
 
         long finishTime = System.currentTimeMillis();
@@ -125,12 +130,12 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
 
         if (printClusterAssignments) {
             result.append("Cluster assigntments:\n");
-            for (int i = 0; i < database.getInstances().numInstances(); ++i) {
+            for (int i = 0; i < clusterAssignments.size(); ++i) {
                 Instance instance = database.getInstances().instance(i);
                 DataObject dataObject = database.getDataObject(instance.stringValue(0));
                 result.append(dataObject.getKey())
                         .append("  -->  ").append(dataObject.getClusterLabel() == DataObject.NOISE ? "NOISE\n" : dataObject.getClusterLabel())
-                        .append(" (").append(dataObject.toString()).append(")\n");
+                        .append(" (").append(dataObject).append(")\n");
             }
         }
         return result.toString();
@@ -195,6 +200,11 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
     @Override
     public double getElapsedTime() {
         return elapsedTime;
+    }
+
+    @Override
+    public List<Integer> getClusterAssignments() {
+        return clusterAssignments;
     }
 
     public DistanceFunction getDistanceFunction() {

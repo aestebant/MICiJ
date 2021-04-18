@@ -269,6 +269,11 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
         return elapsedTime;
     }
 
+    @Override
+    public List<Integer> getClusterAssignments() {
+        return clusterAssignments;
+    }
+
     //TODO No adaptado a MI
     public Enumeration<Option> listOptions() {
         Vector<Option> result = new Vector<>();
