@@ -9,6 +9,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 /**
@@ -18,11 +19,13 @@ public class S_DbwIndex {
     private final int maxNumClusters;
     private final DistanceFunction distanceFunction;
     private final Instances dataset;
+    private boolean parallelize;
 
-    public S_DbwIndex(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction) {
+    public S_DbwIndex(Instances dataset, int maxNumClusters, DistanceFunction distanceFunction, boolean parallelize) {
         this.dataset = dataset;
         this.maxNumClusters = maxNumClusters;
         this.distanceFunction = distanceFunction;
+        this.parallelize = parallelize;
     }
 
     public double computeIndex(List<Integer> clusterAssignments) {
@@ -102,15 +105,45 @@ public class S_DbwIndex {
                     double densityU = 0D;
                     double densityI = 0D;
                     double densityJ = 0D;
-                    for (int k = 0; k < numInstances; ++k) {
-                        if (clusterAssignments.get(k) == i || clusterAssignments.get(k) == j) {
-                            double distance = distanceFunction.distance(aux, dataset.get(k));
-                            if (distance <= stdev)
-                                densityU++;
-                            if (clusterAssignments.get(k) == i)
-                                densityI++;
-                            else
-                                densityJ++;
+
+                    if (parallelize) {
+                        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                        Collection<Callable<Double[]>> collection = new ArrayList<>(numInstances);
+                        for (int k = 0; k < numInstances; ++k) {
+                            Integer assignment = clusterAssignments.get(k);
+                            if (assignment == i || assignment == j) {
+                                collection.add(new ParallelizeComputeDens_Bw(aux, dataset.get(k), assignment));
+                            }
+                        }
+                        try {
+                            List<Future<Double[]>> futures = executor.invokeAll(collection);
+                            for (Future<Double[]> future : futures) {
+                                Double[] futurResult = future.get();
+                                Double distance = futurResult[0];
+                                int assignment = futurResult[1].intValue();
+                                if (distance <= stdev)
+                                    densityU++;
+                                if (assignment == i)
+                                    densityI++;
+                                else
+                                    densityJ++;
+                            }
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                        executor.shutdown();
+                    } else {
+                        for (int k = 0; k < numInstances; ++k) {
+                            int assignment = clusterAssignments.get(k);
+                            if (assignment == i || assignment == j) {
+                                double distance = distanceFunction.distance(aux, dataset.get(k));
+                                if (distance <= stdev)
+                                    densityU++;
+                                if (assignment == i)
+                                    densityI++;
+                                else
+                                    densityJ++;
+                            }
                         }
                     }
                     result += densityU / FastMath.max(densityI, densityJ);
@@ -118,6 +151,21 @@ public class S_DbwIndex {
             }
         }
         return result / (actualNumClusters * (actualNumClusters -1));
+    }
+
+    private class ParallelizeComputeDens_Bw implements Callable<Double[]> {
+        Instance aux;
+        Instance k;
+        Integer assignment;
+        public ParallelizeComputeDens_Bw(Instance aux, Instance k, Integer assignment) {
+            this.aux = aux;
+            this.k = k;
+            this.assignment = assignment;
+        }
+        @Override
+        public Double[] call() throws Exception {
+            return new Double[]{distanceFunction.distance(aux, k), assignment.doubleValue()};
+        }
     }
 
     /**

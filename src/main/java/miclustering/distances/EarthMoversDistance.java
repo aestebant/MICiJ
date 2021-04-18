@@ -54,7 +54,7 @@ public class EarthMoversDistance extends MIDistance {
 
         NonNegativeConstraint positivity = new NonNegativeConstraint(true);
 
-        SimplexSolver solver = new SimplexSolver();
+        SimplexSolver solver = new SimplexSolver(1e-4);
         PointValuePair result = solver.optimize(objective, constraintSet, positivity);
         return result.getPoint();
     }

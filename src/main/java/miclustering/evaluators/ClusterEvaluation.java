@@ -1,6 +1,8 @@
 package miclustering.evaluators;
 
+import miclustering.algorithms.ClusterLikeClass;
 import miclustering.algorithms.MIClusterer;
+import miclustering.distances.HausdorffDistance;
 import miclustering.utils.DatasetCentroids;
 import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
@@ -60,7 +62,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
     public void evaluateClusterer(MIClusterer clusterer, boolean parallelize) throws Exception {
         Instances processData;
-        if (classAtt > -1) {
+        if (classAtt > -1 && !(clusterer instanceof ClusterLikeClass)) {
             Remove removeClass = new Remove();
             removeClass.setAttributeIndices(String.valueOf(classAtt + 1)); // No sé por qué aquí cuenta los índices empezando en 1
             removeClass.setInvertSelection(false);
@@ -81,19 +83,19 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         if (!reuseEvaluator) {
             distanceFunction = clusterer.getDistanceFunction();
             rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
-            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction, parallelize);
             silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
-            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
-            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction, parallelize);
+            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction, parallelize);
             dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
             if (classAtt > -1)
                 extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
-            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction, parallelize);
             ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
             datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
         }
 
-        List<Integer> clusterAssignments = getClusterAssignments(clusterer, processData);
+        clusterAssignments = clusterer.getClusterAssignments();
         fullEvaluation(clusterAssignments, parallelize);
     }
 
@@ -467,14 +469,14 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         if (reuseEvaluator) {
             distanceFunction = LoadByName.distanceFunction(distFunctionClass, options);
             rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
-            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction);
+            sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction, parallelize);
             silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
-            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction);
-            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction);
+            xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction, parallelize);
+            db = new DaviesBouldinIndex(instances, maxNumClusters, distanceFunction, parallelize);
             dbcv = new DBCV(instances, distanceFunction, maxNumClusters, parallelize);
             if (classAtt > -1)
                 extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numDistinctValues(classAtt));
-            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction);
+            twcv = new TotalWithinClusterVariation(instances, maxNumClusters, distanceFunction, parallelize);
             ftwcv = new FastTotalWithinClusterValidation(instances, maxNumClusters);
             datasetCentroids = new DatasetCentroids(instances, maxNumClusters, distanceFunction);
         }
