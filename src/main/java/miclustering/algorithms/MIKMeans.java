@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 
 public class MIKMeans extends RandomizableClusterer implements MIClusterer, NumberOfClustersRequestable, WeightedInstancesHandler, TechnicalInformationHandler {
     int numClusters = 2;
-    private int currentNClusters;
+    protected int currentNClusters;
     private int maxIterations = 500;
     private int initializationMethod = 0;
     DistanceFunction distFunction = new HausdorffDistance();
     private DatasetCentroids datasetCentroids;
     private boolean showStdDevs = false;
-    private boolean parallelize = true;
+    protected boolean parallelize = true;
 
     Instances startingPoints;
     Map<Integer, Instance> centroids;
@@ -137,6 +137,7 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
                     }
                 }
             }
+            System.gc();
         }
         clusterAssignments = oneStepKMeans.evaluate(clusterAssignments, parallelize);
 
@@ -193,13 +194,13 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
             startingPoints.add(centroids.get(i));
     }
 
-    private int computeCentroids(Instances[] clusters) {
+    protected int computeCentroids(Instances[] clusters) {
         int emptyClusterCount = 0;
         centroids = new HashMap<>(numClusters);
 
         ExecutorService executor;
         if (parallelize)
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            executor = Executors.newFixedThreadPool((int) (0.5 * Runtime.getRuntime().availableProcessors()));
         else
             executor = Executors.newFixedThreadPool(1);
         Collection<Callable<Map<Integer, Instance>>> collection = new ArrayList<>(numClusters);
@@ -225,7 +226,7 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
         return emptyClusterCount;
     }
 
-    protected class ParallelizeComputeCentroids implements Callable<Map<Integer, Instance>> {
+    private class ParallelizeComputeCentroids implements Callable<Map<Integer, Instance>> {
         Instances cluster;
         Integer idx;
         ParallelizeComputeCentroids(Integer idx, Instances cluster) {
@@ -234,18 +235,20 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
         }
         @Override
         public Map<Integer, Instance> call() throws Exception {
-            Instance centroid = computeCentroid(cluster);
-            Map<Integer, Instance> result = new HashMap<>();
+            //Instance centroid = computeCentroid(cluster);
+            Instance centroid = datasetCentroids.computeCentroid(cluster);
+            centroid.setDataset(cluster.get(0).relationalValue(1));
+            Map<Integer, Instance> result = new HashMap<>(1);
             result.put(idx, centroid);
             return result;
         }
     }
 
-    protected Instance computeCentroid(Instances members) {
+    /*protected Instance computeCentroid(Instances members) {
         Instance centroid = datasetCentroids.computeCentroid(members);
         centroid.setDataset(members.get(0).relationalValue(1));
         return centroid;
-    }
+    }*/
 
     @Override
     public int clusterInstance(Instance bag) {
