@@ -1,7 +1,7 @@
 package miclustering.evaluators;
 
 import miclustering.utils.DatasetCentroids;
-import org.apache.commons.math3.stat.descriptive.rank.Max;
+import org.apache.commons.math3.stat.descriptive.summary.Sum;
 import org.apache.commons.math3.util.FastMath;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
