@@ -76,8 +76,8 @@ public class XieBeniIndex {
             }
         }
 
-        Max max = new Max();
-        return max.evaluate(sumDist) / minClusterDist;
+        Sum sum = new Sum();
+        return sum.evaluate(sumDist) / (dataset.numInstances() * minClusterDist);
     }
 
     private class ParallelizeComputeIndex implements Callable<Double[]> {
