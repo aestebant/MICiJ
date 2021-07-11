@@ -82,7 +82,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
 
         if (!reuseEvaluator) {
             distanceFunction = clusterer.getDistanceFunction();
-            rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction);
+            rmssd = new RMSStdDev(instances, maxNumClusters, distanceFunction, parallelize);
             sdbw = new S_DbwIndex(instances, maxNumClusters, distanceFunction, parallelize);
             silhouette = new SilhouetteIndex(instances, maxNumClusters, distanceFunction, parallelize);
             xb = new XieBeniIndex(instances, maxNumClusters, distanceFunction, parallelize);
