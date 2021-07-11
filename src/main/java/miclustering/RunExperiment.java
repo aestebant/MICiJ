@@ -105,7 +105,7 @@ public class RunExperiment {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-
+                        System.gc();
                     }
                 }
             }
@@ -190,7 +190,7 @@ public class RunExperiment {
     }
 
     private static void setSaveResults() {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
         Date date = new Date(System.currentTimeMillis());
         String dateString = dateFormat.format(date);
         String actualReportTitle = reportTitle + "_" + dateString;
@@ -217,7 +217,7 @@ public class RunExperiment {
     }
 
     private static String saveFullReport(Clusterer clusterer, ClusterEvaluation evaluation) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
         Date date = new Date(System.currentTimeMillis());
         String dateString = dateFormat.format(date);
         String actualReportTitle = reportTitle + "_" + dateString + ".report.txt";
