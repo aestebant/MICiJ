@@ -120,40 +120,40 @@ public class RunExperiment {
 
     private static void setExperiments() {
         dataset = new String[]{
-//                "BirdsBrownCreeper",
-//                "BirdsChestnut-backedChickadee",
-//                "BirdsHammondsFlycatcher",
-//                "CorelAfrican",
-//                "CorelAntique",
-//                "CorelBattleships",
-//                "Harddrive1",
-                "ImageElephant",
-                "ImageFox",
-                "ImageTiger",
-//                "Messidor",
-                "mutagenesis3_atoms",
-                "mutagenesis3_bonds",
-                "mutagenesis3_chains",
-                "musk1",
-                "musk2",
-//                "Newsgroups1",
-//                "Newsgroups2",
-//                "Newsgroups3",
+//                "DirectionEastwest",
+//                "DirectionWesteast",
+//                "standardMI_Maron",
+//                "mutagenesis3_atoms",
 //                "suramin",
-                "DirectionEastwest",
-                "DirectionWesteast",
+//                "mutagenesis3_bonds",
+//                "mutagenesis3_chains",
+//                "CorelAntique",
+//                "CorelAfrican",
+//                "CorelBattleships",
+//                "musk1",
+//                "ImageTiger",
+//                "ImageFox",
+//                "ImageElephant",
+//                "Newsgroups2",
 //                "Thioredoxin",
+//                "Newsgroups3",
+//                "Newsgroups1",
+//                "Graz02people",
+//                "Graz02bikes",
+//                "BirdsHammondsFlycatcher",
+//                "BirdsChestnut-backedChickadee",
+//                "BirdsBrownCreeper",
+//                "Graz02car",
+//                "musk2",
 //                "UCSBBreastCancer",
+//                "BiocreativeComponent",
+                "Harddrive1",
+//                "BiocreativeFunction",
 //                "Web1",
 //                "Web2",
 //                "Web3",
-//                "Graz02bikes",
-//                "Graz02car",
-//                "Graz02people",
-//                "standardMI_Maron",
-//                "BiocreativeComponent",
-//                "BiocreativeFunction",
 //                "BiocreativeProcess",
+//                "Messidor"
         };
 
         standardization = new String[]{
@@ -165,21 +165,42 @@ public class RunExperiment {
         clustering = new String[]{
 //                "MIDBSCAN",
                 "MIKMeans",
-                "BAMIC",
+//                "BAMIC",
+//                "ClusterLikeClass"
+        };
+
+        int[] seeds = new int[] {
+//                9854,
+                1234,
+//                879,
+//                25,
+//                1995,
+//                483,
+                7,
+                27,
+                1357,
+                13
         };
 
         List<String> kMeansConfig = new ArrayList<>();
         for (int k = 2; k <= 2; ++k) {
-            for (int hausdorff : new int[]{0}) {
-                for (int seed : new int[]{9854, 5495216, 11122333, 753, 456892, 6847983, 1559753, 65489, 987123, 351759}) {
-                    kMeansConfig.add("-N " + k + " -V -parallelize -A HausdorffDistance -hausdorff-type " + hausdorff + " -S " + seed);
+            for (int hausdorff : new int[]{0, 1, 2, 3}) {
+                for (int seed : seeds) {
+//                    kMeansConfig.add("-N " + k + " -parallelize -A HausdorffDistance -hausdorff-type " + hausdorff + " -S " + seed);
                 }
             }
+            for (int seed : seeds) {
+                kMeansConfig.add("-N " + k + " -parallelize -A EarthMoversDistance -S " + seed);
+            }
+            for (int seed : seeds) {
+                kMeansConfig.add("-N " + k + " -parallelize -A MahalanobisDistance -S " + seed);
+            }
         }
+
         List<String> dbscanConfig = new ArrayList<>();
         for (double eps : new double[]{0.2, 0.4, 0.6, 0.8, 0.9}) {
             for (String hausdorff : new ArrayList<>(Arrays.asList("0", "1", "2", "3"))) {
-                dbscanConfig.add("-E " + eps + " -output-clusters -A HausdorffDistance -hausdorff-type " + hausdorff);
+//                dbscanConfig.add("-E " + eps + " -output-clusters -A HausdorffDistance -hausdorff-type " + hausdorff);
             }
         }
 
@@ -187,6 +208,7 @@ public class RunExperiment {
         clusterConfig.put("MIKMeans", kMeansConfig);
         clusterConfig.put("BAMIC", kMeansConfig);
         clusterConfig.put("MIDBSCAN", dbscanConfig);
+        clusterConfig.put("ClusterLikeClass", new ArrayList<>(Collections.singletonList("")));
     }
 
     private static void setSaveResults() {
