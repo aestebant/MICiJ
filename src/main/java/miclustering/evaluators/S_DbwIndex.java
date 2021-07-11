@@ -107,7 +107,7 @@ public class S_DbwIndex {
                     double densityJ = 0D;
 
                     if (parallelize) {
-                        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                        ExecutorService executor = Executors.newFixedThreadPool((int) (Runtime.getRuntime().availableProcessors() * 0.25));
                         Collection<Callable<Double[]>> collection = new ArrayList<>(numInstances);
                         for (int k = 0; k < numInstances; ++k) {
                             Integer assignment = clusterAssignments.get(k);

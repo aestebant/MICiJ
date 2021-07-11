@@ -34,7 +34,7 @@ public class TotalWithinClusterVariation {
         double twcv = 0D;
 
         if(parallelize) {
-            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            ExecutorService executor = Executors.newFixedThreadPool((int) (Runtime.getRuntime().availableProcessors() * 0.25));
             Collection<Callable<Double>> collection = new ArrayList<>(dataset.numInstances());
             for (int i = 0; i < dataset.numInstances(); ++i)
                 collection.add(new ParallelizeComputeIndex(dataset.get(i), centroids.get(clusterAssignments.get(i))));

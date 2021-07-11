@@ -27,7 +27,7 @@ public class DistancesMatrix {
         double[][] distances = new double[numBags][numBags];
 
         if (parallelize) {
-            ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            ExecutorService executor = Executors.newFixedThreadPool((int) (Runtime.getRuntime().availableProcessors() * 0.25));
             Collection<Callable<Double[]>> collection = new ArrayList<>(numBags);
             for (int i = 0; i < numBags; ++i) {
                 int init = isDistance ? i + 1 : 0;
