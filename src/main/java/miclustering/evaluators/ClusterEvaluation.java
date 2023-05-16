@@ -112,7 +112,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         computedDbcv = dbcv.computeIndex(clusterAssignments, bagsPerCluster);
 
         if (classAtt > -1) {
-            extEval = new ExternalEvaluation(instances, maxNumClusters, instances.numClasses());
+            extEval = new ExternalEvaluation(instances, actualNumClusters, instances.numClasses());
             extEvalResult = extEval.computeConfusionMatrix(clusterAssignments, bagsPerCluster);
             entropy = extEval.computeEntropy(extEvalResult.getConfMatrix(), bagsPerCluster);
             purity = extEval.computePurity(extEvalResult.getConfMatrix());
