@@ -66,10 +66,10 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         }
 
         UpdateQueue seeds = new UpdateQueue();
-        Iterator iterator = this.database.dataObjectIterator();
+        Iterator<DataObject> iterator = this.database.dataObjectIterator();
 
         while (iterator.hasNext()) {
-            DataObject dataObject = (DataObject) iterator.next();
+            DataObject dataObject = iterator.next();
             if (!dataObject.isProcessed()) {
                 this.expandClusterOrder(dataObject, seeds);
             }
@@ -114,7 +114,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
 
     private void expandClusterOrder(DataObject dataObject, UpdateQueue seeds) {
         List list = this.database.coreDistance(this.getMinPoints(), this.getEpsilon(), dataObject);
-        List epsilonRange_List = (List) list.get(1);
+        List<NEpsElement> epsilonRange_List = (List<NEpsElement>) list.get(1);
         dataObject.setReachabilityDistance(2.147483647E9D);
         dataObject.setCoreDistance((Double) list.get(2));
         dataObject.setProcessed(true);
@@ -127,7 +127,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
                 DataObject currentDataObject = (DataObject) updateQueueElement.getObject();
                 currentDataObject.setReachabilityDistance(updateQueueElement.getPriority());
                 List list_1 = this.database.coreDistance(this.getMinPoints(), this.getEpsilon(), currentDataObject);
-                List epsilonRange_List_1 = (List) list_1.get(1);
+                List<NEpsElement> epsilonRange_List_1 = (List<NEpsElement>) list_1.get(1);
                 currentDataObject.setCoreDistance((Double) list_1.get(2));
                 currentDataObject.setProcessed(true);
                 this.resultVector.add(currentDataObject);
@@ -143,15 +143,13 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         return "(" + Utils.doubleToString(Double.parseDouble(dataObject.getKey()), Integer.toString(this.database.size()).length(), 0) + ".) " + Utils.padRight(dataObject.toString(), 40) + "  -->  c_dist: " + (dataObject.getCoreDistance() == 2.147483647E9D ? Utils.padRight("UNDEFINED", 12) : Utils.padRight(Utils.doubleToString(dataObject.getCoreDistance(), 2, 3), 12)) + " r_dist: " + (dataObject.getReachabilityDistance() == 2.147483647E9D ? Utils.padRight("UNDEFINED", 12) : Utils.doubleToString(dataObject.getReachabilityDistance(), 2, 3)) + "\n";
     }
 
-    private void update(UpdateQueue seeds, List epsilonRange_list, DataObject centralObject) {
+    private void update(UpdateQueue seeds, List<NEpsElement> epsilonRange_list, DataObject centralObject) {
         double coreDistance = centralObject.getCoreDistance();
         double new_r_dist;
-
-        for (Object o : epsilonRange_list) {
-            NEpsElement listElement = (NEpsElement) o;
-            DataObject neighbourhood_object = listElement.getDataObject();
+        for (NEpsElement epsElement : epsilonRange_list) {
+            DataObject neighbourhood_object = epsElement.getDataObject();
             if (!neighbourhood_object.isProcessed()) {
-                new_r_dist = Math.max(coreDistance, listElement.getDistance());
+                new_r_dist = Math.max(coreDistance, epsElement.getDistance());
                 seeds.add(new_r_dist, neighbourhood_object, neighbourhood_object.getKey());
             }
         }
@@ -209,9 +207,9 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     public String[] getOptions() {
         Vector<String> result = new Vector<>();
         result.add("-E");
-        result.add("" + this.getEpsilon());
+        result.add(String.valueOf(this.getEpsilon()));
         result.add("-M");
-        result.add("" + this.getMinPoints());
+        result.add(String.valueOf(this.getMinPoints()));
         result.add("-A");
         result.add((this.distFunction.getClass().getName() + " " + Utils.joinOptions(this.distFunction.getOptions())).trim());
         if (this.getWriteOPTICSresults()) {
@@ -223,7 +221,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         }
 
         result.add("-db-output");
-        result.add("" + this.getDatabaseOutput());
+        result.add(String.valueOf(this.getDatabaseOutput()));
         return result.toArray(new String[0]);
     }
 
@@ -289,7 +287,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         this.databaseOutput = value;
     }
 
-    public ArrayList getResultVector() {
+    public List<DataObject> getResultVector() {
         return this.resultVector;
     }
 
@@ -348,7 +346,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
             stringBuffer.append(this.format_dataObject(dataObject));
         }
 
-        return stringBuffer.toString() + "\n";
+        return stringBuffer + "\n";
     }
 
     public String getRevision() {

@@ -4,8 +4,8 @@ import weka.core.RevisionHandler;
 import weka.core.RevisionUtils;
 
 public class NEpsElement implements RevisionHandler {
-    private DataObject dataObject;
-    private double distance;
+    final private DataObject dataObject;
+    final private double distance;
 
     public NEpsElement(double distance, DataObject dataObject) {
         this.distance = distance;

@@ -9,8 +9,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Database implements Serializable, RevisionHandler {
-    private TreeMap<String, DataObject> treeMap;
-    private Instances instances;
+    private final TreeMap<String, DataObject> treeMap;
+    private final Instances instances;
     private final DistanceFunction df;
 
     public Database(DistanceFunction distFunc, Instances instances) {
@@ -29,8 +29,9 @@ public class Database implements Serializable, RevisionHandler {
         Collection<Callable<DataObject>> collection = new ArrayList<>();
 
         List<DataObject> nEps = new ArrayList<>();
-        for (Iterator i = dataObjectIterator(); i.hasNext(); ) {
-            DataObject dataObject = (DataObject) i.next();
+        Iterator<DataObject> it = this.dataObjectIterator();
+        while (it.hasNext()) {
+            DataObject dataObject = it.next();
             collection.add(new Wrapper(queryDataObject, dataObject, epsilon));
         }
 
@@ -50,9 +51,9 @@ public class Database implements Serializable, RevisionHandler {
     }
 
      class Wrapper implements Callable<DataObject> {
-        private DataObject bag1;
-        private DataObject bag2;
-        private double epsilon;
+        final private DataObject bag1;
+        final private DataObject bag2;
+        final private double epsilon;
 
         private Wrapper(DataObject bag1, DataObject bag2, double epsilon) {
             this.bag1 = bag1;
@@ -76,8 +77,9 @@ public class Database implements Serializable, RevisionHandler {
     private List kNextNeighbourQuery(int k, double epsilon, DataObject dataObject) {
         List<NEpsElement> epsilonRange = new ArrayList<>();
         PriorityQueue priorityQueue = new PriorityQueue();
-        for(Iterator i = this.dataObjectIterator(); i.hasNext(); ) {
-            DataObject next_dataObject = (DataObject)i.next();
+        Iterator<DataObject> it = this.dataObjectIterator();
+        while(it.hasNext()) {
+            DataObject next_dataObject = it.next();
             double distance = df.distance(dataObject.getInstance(), next_dataObject.getInstance());
             if (distance <= epsilon) {
                 epsilonRange.add(new NEpsElement(distance, next_dataObject));
@@ -127,16 +129,16 @@ public class Database implements Serializable, RevisionHandler {
         return this.treeMap.size();
     }
 
-    public Iterator keyIterator() {
+    public Iterator<String> keyIterator() {
         return this.treeMap.keySet().iterator();
     }
 
-    public Iterator dataObjectIterator() {
+    public Iterator<DataObject> dataObjectIterator() {
         return this.treeMap.values().iterator();
     }
 
     public boolean contains(DataObject dataObject_Query) {
-        Iterator iterator = this.dataObjectIterator();
+        Iterator<DataObject> iterator = this.dataObjectIterator();
 
         DataObject dataObject;
         do {
@@ -144,7 +146,7 @@ public class Database implements Serializable, RevisionHandler {
                 return false;
             }
 
-            dataObject = (DataObject)iterator.next();
+            dataObject = iterator.next();
         } while(!dataObject.equals(dataObject_Query));
 
         return true;

@@ -47,16 +47,16 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
         numNoises = 0;
         clusterID = 0;
         database = new Database(distFunction, instances);
-        clusterAssignments = new ArrayList<>(database.getInstances().numInstances());
+        clusterAssignments = new ArrayList<>(instances.numInstances());
 
-        for (int i = 0; i < database.getInstances().numInstances(); ++i) {
-            Instance instance = database.getInstances().instance(i);
+        for (Instance instance : database.getInstances()) {
             DataObject dataObject = new DataObject(instance, instance.stringValue(0));
             database.insert(dataObject);
         }
 
-        for (Iterator i = database.dataObjectIterator(); i.hasNext(); ) {
-            DataObject bag = (DataObject) i.next();
+        Iterator<DataObject> it = database.dataObjectIterator();
+        while (it.hasNext()) {
+            DataObject bag = it.next();
             //System.out.println("ANALIZANDO BOLSA " + bag.getKey());
             if (bag.getClusterLabel() == DataObject.UNCLASSIFIED && this.expandCluster(bag)) {
                 //System.out.println("HA ENTRADO EN EL CLÚSTER " + bag.getClusterLabel());
@@ -65,8 +65,7 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
             }
         }
 
-        for (int i = 0; i < clusterAssignments.size(); ++i) {
-            Instance instance = database.getInstances().instance(i);
+        for (Instance instance : database.getInstances()) {
             DataObject dataObject = database.getDataObject(instance.stringValue(0));
             clusterAssignments.add(dataObject.getClusterLabel());
         }
