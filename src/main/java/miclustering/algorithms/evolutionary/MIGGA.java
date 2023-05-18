@@ -18,7 +18,8 @@ public class MIGGA extends SGE implements IConfigure {
         setDataset(pathDataset);
 
         int nBags = dataset.numberOfExamples();
-        int maxK = settings.getInt("evaluator.max-of-clusters");
+        int minK = settings.getInt("evaluator.kmin");
+        int maxK = settings.getInt("evaluator.kmax");
 
         settings.addProperty("provider[@type]", "miclustering.algorithms.evolutionary.migga.MIGGAArrayCreator");
         settings.addProperty("species[@type]", "jclec.intarray.IntArrayIndividualSpecies");
@@ -30,7 +31,7 @@ public class MIGGA extends SGE implements IConfigure {
         }
 
         settings.addProperty("species.genotype-schema.locus(" + nBags + ")[@type]", "jclec.util.intset.Interval");
-        settings.addProperty("species.genotype-schema.locus(" + nBags + ")[@left]", "1");
+        settings.addProperty("species.genotype-schema.locus(" + nBags + ")[@left]", Integer.toString(minK));
         settings.addProperty("species.genotype-schema.locus(" + nBags + ")[@right]", Integer.toString(maxK));
         settings.addProperty("species.genotype-schema.locus(" + nBags + ")[@closure]", "closed-closed");
 
@@ -49,9 +50,11 @@ public class MIGGA extends SGE implements IConfigure {
         dataset = new ArffDataSet();
         ((AbstractDataset) dataset).setFileName(pathToDataset);
         dataset.setMetadata(new MIClassificationMetadata());
-        // numOfAttributes devuelve el número de atributos de instancia -> coincide con el valor de índice de la clase
+        // numOfAttributes returns the number of attributes of the instance -> same as bag index
         ((MIClassificationMetadata) dataset.getMetadata()).setClassIndex(dataset.getMetadata().numberOfAttributes());
         dataset.loadExamples();
     }
+
+    // TODO: selection, mutation and crossover operators adapted to the MIGGA genotype
 }
 
