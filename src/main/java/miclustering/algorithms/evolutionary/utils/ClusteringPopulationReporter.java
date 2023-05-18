@@ -1,5 +1,8 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.utils;
 
+import miclustering.algorithms.evolutionary.CHCMIClustering;
+import miclustering.algorithms.evolutionary.MIGCUK;
+import miclustering.algorithms.evolutionary.MIGKA;
 import miclustering.utils.PrintConfusionMatrix;
 import jclec.AlgorithmEvent;
 import jclec.IFitness;

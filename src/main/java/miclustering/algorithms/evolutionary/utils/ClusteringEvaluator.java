@@ -1,4 +1,4 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.utils;
 
 import miclustering.evaluators.ClusterEvaluation;
 import jclec.IConfigure;

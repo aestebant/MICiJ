@@ -1,9 +1,10 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.migcuk;
 
 import miclustering.algorithms.OneStepKMeans;
 import jclec.IIndividual;
 import jclec.fitness.SimpleValueFitness;
 import jclec.intarray.IntArrayIndividual;
+import miclustering.algorithms.evolutionary.utils.ClusteringEvaluator;
 import org.apache.commons.configuration.Configuration;
 
 import java.util.List;

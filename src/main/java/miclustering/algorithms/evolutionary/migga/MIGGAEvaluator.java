@@ -1,5 +1,6 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.migga;
 
+import miclustering.algorithms.evolutionary.utils.ClusteringEvaluator;
 import miclustering.evaluators.ClusterEvaluation;
 import jclec.IIndividual;
 import jclec.fitness.SimpleValueFitness;

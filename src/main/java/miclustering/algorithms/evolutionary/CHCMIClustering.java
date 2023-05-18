@@ -6,6 +6,8 @@ import jclec.problem.classification.multiinstance.MIClassificationMetadata;
 import jclec.problem.util.dataset.AbstractDataset;
 import jclec.problem.util.dataset.ArffDataSet;
 import jclec.problem.util.dataset.IDataset;
+import miclustering.algorithms.evolutionary.utils.ClusteringEvaluator;
+import miclustering.algorithms.evolutionary.utils.ClusteringMutator;
 import org.apache.commons.configuration.Configuration;
 
 public class CHCMIClustering extends CHC {

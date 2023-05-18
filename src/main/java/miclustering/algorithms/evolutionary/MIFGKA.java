@@ -1,6 +1,7 @@
 package miclustering.algorithms.evolutionary;
 
 import jclec.base.FilteredMutator;
+import miclustering.algorithms.evolutionary.utils.ClusteringEvaluator;
 import org.apache.commons.configuration.Configuration;
 
 public class MIFGKA extends MIGKA {

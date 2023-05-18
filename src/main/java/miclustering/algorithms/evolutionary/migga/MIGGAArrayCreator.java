@@ -1,4 +1,4 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.migga;
 
 import jclec.intarray.IntArrayCreator;
 

@@ -3,6 +3,7 @@ package miclustering.algorithms.evolutionary;
 import jclec.IIndividual;
 import jclec.fitness.ValueFitnessComparator;
 import jclec.intarray.IntArrayIndividual;
+import miclustering.algorithms.evolutionary.utils.ClusteringMutator;
 import org.apache.commons.math3.stat.descriptive.rank.Max;
 import weka.core.Instance;
 

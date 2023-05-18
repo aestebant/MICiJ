@@ -1,4 +1,4 @@
-package miclustering.algorithms.evolutionary;
+package miclustering.algorithms.evolutionary.migcuk;
 
 import jclec.IIndividual;
 import jclec.intarray.IntArrayIndividual;

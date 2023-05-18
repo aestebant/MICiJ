@@ -20,7 +20,7 @@ public class MIGGA extends SGE implements IConfigure {
         int nBags = dataset.numberOfExamples();
         int maxK = settings.getInt("evaluator.max-of-clusters");
 
-        settings.addProperty("provider[@type]", "miclustering.algorithms.evolutionary.MIGGAArrayCreator");
+        settings.addProperty("provider[@type]", "miclustering.algorithms.evolutionary.migga.MIGGAArrayCreator");
         settings.addProperty("species[@type]", "jclec.intarray.IntArrayIndividualSpecies");
         for (int i = 0; i < nBags; ++i) {
             settings.addProperty("species.genotype-schema.locus(" + i + ")[@type]", "jclec.util.intset.Interval");
