@@ -154,12 +154,12 @@ public class MIDBSCAN extends AbstractClusterer implements MIClusterer, OptionHa
     @Override
     public void setOptions(String[] options) throws Exception {
         String minPoints = Utils.getOption('M', options);
-        if (minPoints.length() != 0) {
+        if (!minPoints.isEmpty()) {
             this.setMinPoints(Integer.parseInt(minPoints));
         }
 
         String epsilon = Utils.getOption('E', options);
-        if (epsilon.length() != 0) {
+        if (!epsilon.isEmpty()) {
             this.setEpsilon(Double.parseDouble(epsilon));
         }
 

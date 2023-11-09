@@ -50,9 +50,7 @@ public class DatasetCentroids {
                 List<Future<Map<Integer, Instance>>> futures = executor.invokeAll(collection);
                 for (Future<Map<Integer, Instance>> future : futures) {
                     Map<Integer, Instance> result = future.get();
-                    for (Map.Entry<Integer, Instance> r : result.entrySet()) {
-                        centroids.put(r.getKey(), r.getValue());
-                    }
+                    centroids.putAll(result);
                 }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();

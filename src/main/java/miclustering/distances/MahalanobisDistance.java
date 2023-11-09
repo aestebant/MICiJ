@@ -23,6 +23,13 @@ public class MahalanobisDistance extends MIDistance {
         RealMatrix mean2 = new Array2DRowRealMatrix(vm2.getResult());
         RealMatrix meanSub = mean1.subtract(mean2);
 
+        RealMatrix invCov = getInvCov(data1, data2);
+
+        RealMatrix result = meanSub.transpose().multiply(invCov).multiply(meanSub);
+        return result.getData()[0][0];
+    }
+
+    private static RealMatrix getInvCov(double[][] data1, double[][] data2) {
         RealMatrix cov1;
         if (data1.length > 1) {
             Covariance getCov1 = new Covariance(data1);
@@ -48,9 +55,7 @@ public class MahalanobisDistance extends MIDistance {
             invCov = solver.getInverse();
         else
             invCov = new SingularValueDecomposition(invCov).getSolver().getInverse();
-
-        RealMatrix result = meanSub.transpose().multiply(invCov).multiply(meanSub);
-        return result.getData()[0][0];
+        return invCov;
     }
 
     @Override

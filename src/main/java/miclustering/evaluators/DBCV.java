@@ -105,8 +105,8 @@ public class DBCV {
 
     private double densitySparseness(SpanningTreeAlgorithm.SpanningTree<WeightedEdge> mst) {
         double maxWeight = Double.NEGATIVE_INFINITY;
-        for (DefaultWeightedEdge edge : mst) {
-            double currWeight = ((WeightedEdge) edge).getWeight();
+        for (WeightedEdge edge : mst) {
+            double currWeight = edge.getWeight();
             if (currWeight > maxWeight)
                 maxWeight = currWeight;
         }

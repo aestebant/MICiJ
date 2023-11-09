@@ -21,7 +21,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHandler, TechnicalInformationHandler {
-    static final long serialVersionUID = 274552680222105221L;
+    private static final long serialVersionUID = 274552680222105221L;
     private double epsilon = 0.9D;
     private int minPoints;
     private int numberOfGeneratedClusters;
@@ -179,14 +179,14 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
     @Override
     public void setOptions(String[] options) throws Exception {
         String optionString = Utils.getOption('E', options);
-        if (optionString.length() != 0) {
+        if (!optionString.isEmpty()) {
             this.setEpsilon(Double.parseDouble(optionString));
         } else {
             this.setEpsilon(0.9D);
         }
 
         optionString = Utils.getOption('M', options);
-        if (optionString.length() != 0) {
+        if (!optionString.isEmpty()) {
             this.setMinPoints(Integer.parseInt(optionString));
         }
 
@@ -196,7 +196,7 @@ public class MIOPTICS extends AbstractClusterer implements MIClusterer, OptionHa
         this.setWriteOPTICSresults(Utils.getFlag('F', options));
         this.setShowGUI(!Utils.getFlag("no-gui", options));
         optionString = Utils.getOption("db-output", options);
-        if (optionString.length() != 0) {
+        if (!optionString.isEmpty()) {
             this.setDatabaseOutput(new File(optionString));
         } else {
             this.setDatabaseOutput(new File("."));

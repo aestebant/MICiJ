@@ -49,7 +49,7 @@ public class SilhouetteIndex {
                     possibleB.add(meanDistToCluster[j]);
             }
             double bPoint = 0;
-            if (possibleB.size() > 0)
+            if (!possibleB.isEmpty())
                 bPoint = Collections.min(possibleB);
 
             if (aPoint < bPoint)

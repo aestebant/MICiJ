@@ -79,7 +79,7 @@ public class HausdorffDistance extends MIDistance {
     @Override
     public void setOptions(String[] options) throws Exception {
         String type = Utils.getOption("hausdorff-type", options);
-        if (type.length() > 0) {
+        if (!type.isEmpty()) {
             switch (Integer.parseInt(type)) {
                 case MAXMIN:
                     this.type = MAXMIN;

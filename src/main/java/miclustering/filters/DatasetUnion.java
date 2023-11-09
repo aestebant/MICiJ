@@ -48,7 +48,7 @@ public class DatasetUnion {
         }
         AddValues addClasses = new AddValues();
         try {
-            addClasses.setOptions(Utils.splitOptions("-C last -L " + idClasses.toString()));
+            addClasses.setOptions(Utils.splitOptions("-C last -L " + idClasses));
             for (int i = 0; i < datasets.size(); ++i) {
                 addClasses.setInputFormat(datasets.get(i));
                 datasets.set(i, Filter.useFilter(datasets.get(i), addClasses));

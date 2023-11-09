@@ -2,7 +2,6 @@ package miclustering.evaluators;
 
 import miclustering.algorithms.ClusterLikeClass;
 import miclustering.algorithms.MIClusterer;
-import miclustering.distances.HausdorffDistance;
 import miclustering.utils.DatasetCentroids;
 import miclustering.utils.LoadByName;
 import miclustering.utils.PrintConfusionMatrix;
@@ -463,7 +462,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
         boolean parallelize = Utils.getFlag("parallelize", options);
 
         attributeRangeString = Utils.getOption("p", options);
-        if (attributeRangeString.length() != 0)
+        if (!attributeRangeString.isEmpty())
             printClusterAssignments = true;
 
         if (reuseEvaluator) {
@@ -485,7 +484,7 @@ public class ClusterEvaluation implements Serializable, OptionHandler, RevisionH
     }
 
     private void setClass(String classString) {
-        if (classString.length() != 0) {
+        if (!classString.isEmpty()) {
             if (classString.equals("last"))
                 classAtt = instances.numAttributes() - 1;
             else if (classString.equals("first"))

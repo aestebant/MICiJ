@@ -374,17 +374,17 @@ public class MIKMeans extends RandomizableClusterer implements MIClusterer, Numb
         this.showStdDevs = Utils.getFlag("V", options);
 
         String initM = Utils.getOption("init", options);
-        if (initM.length() > 0) {
+        if (!initM.isEmpty()) {
             this.setInitializationMethod(Integer.parseInt(initM));
         }
 
         String n = Utils.getOption('N', options);
-        if (n.length() != 0) {
+        if (!n.isEmpty()) {
             this.setNumClusters(Integer.parseInt(n));
         }
 
         String i = Utils.getOption("I", options);
-        if (i.length() != 0) {
+        if (!i.isEmpty()) {
             this.setMaxIterations(Integer.parseInt(i));
         }
 
